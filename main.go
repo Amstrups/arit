@@ -1,20 +1,29 @@
 package main
 
 import (
+	"arit/parser"
 	"flag"
 	"fmt"
+	"log"
 	"os"
-  "arit/parser"
 )
 
-
 func main() { 
+
   argsWithProg := os.Args 
+
 
 
   //input := "x := 5 + 3\nif x > 5 {\n fmt.Println(\"x is greater than 5\")\n}"
   //input := "..."
-  parser.Lexer([]byte(argsWithProg[1])) 
+  tokens := parser.Lexer([]byte(argsWithProg[1])) 
+  tree := parser.Parser(tokens)
+  result, err := tree[0].Eval()
+  if (err != nil) {
+    log.Fatal(err)
+  }
+  println("eval: ", result)
+  
 
   //name := flag.String("name", "world", "The name to greet.")
   flag.Parse()
