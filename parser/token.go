@@ -3,35 +3,51 @@ package parser
 import "fmt"
 
 const (
-  INT = 1
-  FLOAT = 2
+  TERM_LB = iota 
+  INT
+  FLOAT
+  TERM_UB
 
-  ADD = 3 // +
-  SUB = 4 // -
-  DIV = 5 // /
-  MUL = 6 // *
+  OP_LB
+  ADD
+  SUB
+  DIV
+  MUL
+  OP_UB
 
-  LPAREN = 7
-  RPAREN = 8
-  LSQUARE = 9
-  RSQUARE = 10
-  LBRACK = 11 
-  RBRACK = 12
+  PAREN_LB
+  LPAREN
+  RPAREN
+  LSQUARE
+  RSQUARE
+  LBRACK
+  RBRACK
+  PAREN_UB
 
-  LT = 13 // <
-  GT = 14 // >
-  EQ = 15 // == 
-  NEQ = 16 // !=
+  EQ_LB
+  LT
+  GT
+  EQ
+  NEQ
+  EQ_UB
 
-  COLON = 17 // :
-  SCOLON = 18 // ;
-  DOT = 19 // .   
+  PUNCH_LB
+  COLON
+  SCOLON
+  DOT
+  COMMA
+  PUNCH_UB
 
-  AND = 20 // &&
-  OR = 21 // ||
+  LOGIC_LB
+  AND
+  OR
+  LOGIC_UB
 
-  VAR = 22 // variables
+  VARS_LB
+  VAR
+  VARS_UB
 )
+
 
 type Token struct {
   tokent int 
@@ -39,8 +55,33 @@ type Token struct {
   pos,line int 
 }
 
+
+type TokenTRange struct { 
+  lb,ub int
+} 
+
+// SingleValueRange
+func SVR(ts []int) []TokenTRange { 
+  ranges := []TokenTRange{}
+  for _,t := range ts { 
+    ranges = append(ranges, TokenTRange{t-1, t+1})
+  } 
+  return ranges
+} 
+
+
 func PrettyPrint(ts []Token) {
-  for _, s := range ts { 
+  fmt.Println("Pretty printing: ")
+  for _, s := range ts {
     fmt.Println(s.val)
   }
 }
+
+func (t Token) isEqualType(ot Token) bool { 
+  return t.tokent == ot.tokent
+}
+
+func (t Token) isEqual(ot TokenTRange) bool { 
+  return t.tokent > ot.lb && t.tokent < ot.ub
+
+} 

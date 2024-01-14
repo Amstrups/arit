@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"log"
 )
 
@@ -25,26 +24,25 @@ func findPos(input []byte, pos int, byteTypeCheck func(byte) bool) int {
   return max(pos, tail-1)
 }
 
-func Lexer(input []byte) {
+func Lexer(input []byte) []Token {
   tokens := []Token{}
 
   pos := 0
 
   for {
-    if (pos >= len(input)+1) {
+    if (pos >= len(input)) {
       break 
     } 
     switch {
       case byteIsNumber(input[pos]): // thats a number
       intEnd := findPos(input, pos, byteIsNumber)
       tokens = append(tokens, Token{INT,string(input[pos:intEnd+1]) , pos, 1}) 
-      pos += intEnd+1 
+      pos = intEnd+1
     
       case byteIsVar(input[pos]): // thats a number
       varEnd := findPos(input, pos, byteIsVar)
-      fmt.Println(pos, varEnd)
       tokens = append(tokens, Token{VAR,string(input[pos:varEnd+1]) , pos, 1}) 
-      pos += varEnd+1 
+      pos = varEnd+1
 
     case input[pos] == 43: // +
       tokens = append(tokens, Token{ADD,"+", pos, 1}) 
@@ -76,16 +74,14 @@ func Lexer(input []byte) {
     case input[pos] == 125: // }
       tokens = append(tokens, Token{RBRACK,"}", pos, 1}) 
       pos += 1
-      
     case input[pos] == 46:
       tokens = append(tokens, Token{DOT, ".", pos, 1}) 
       pos += 1
-      
     default:
       log.Fatal("unknown char: ", input[pos]) 
     }
 
   }
   PrettyPrint(tokens)
-  fmt.Println(tokens)
+  return tokens
 }
