@@ -2,12 +2,15 @@ package parser
 
 import "fmt"
 
+// Matching on UB+LB - Not my worst idea actually
 const (
+  // Terminals
   TERM_LB = iota 
   INT
   FLOAT
   TERM_UB
 
+  // Binary Operation
   OP_LB
   ADD
   SUB
