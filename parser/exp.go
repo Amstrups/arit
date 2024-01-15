@@ -1,10 +1,10 @@
 package parser
 
 import (
-	"errors"
-	"fmt"
-	"log"
-	"strconv"
+  "errors"
+  "fmt"
+  "log"
+  "strconv"
 )
 
 var ErrDivideByZero = errors.New("divide by zero")
@@ -19,6 +19,7 @@ func getNonNilErr(l_err error, r_err error) error {
 
 type Exp interface {
   Eval() (float32, error)
+  String() string
 }
 
 type IntExp struct {
@@ -30,6 +31,10 @@ func (in IntExp) Eval() (float32,error) {
   return float32(in.val), nil
 }
 
+func (in IntExp) String() string {
+  return fmt.Sprintf("IntExp(%d,%d:%d)", in.val, in.pos, in.line)
+}
+
 type FloatExp struct {
   val float32
   pos, line int 
@@ -37,6 +42,9 @@ type FloatExp struct {
 
 func (fl FloatExp) Eval() (float32,error) { 
   return fl.val,nil 
+}
+func (fl FloatExp) String() string {
+  return fmt.Sprintf("FloatExp(%.4f,%d:%d)", fl.val, fl.pos, fl.line)
 }
 
 type BinExp struct { 
@@ -83,13 +91,14 @@ func (bin BinExp) Eval() (float32,error) {
     if (err != nil) { 
       return -1, err
     }
-    if (r == 0) { 
-      return -1,ErrDivideByZero 
-    } 
-    return l / r, err
+    return l * r, err
   }
 
   return -1,ErrUnknownOperation
+}
+
+func (bin BinExp) String() string {
+  return fmt.Sprintf("BinExp(%d,l:%s,r:%s,%d:%d)", bin.op, bin.left, bin.right, bin.pos, bin.line)
 }
 
 
@@ -120,17 +129,8 @@ func dynamicTermExp(t Token) Exp {
 
 
 func NewOpExp(tokens []Token) BinExp {
-  fmt.Println("tokens: ", tokens)
   t1,op, t2 := tokens[0], tokens[1], tokens[2]
   e1 := dynamicTermExp(t1)
   e2 := dynamicTermExp(t2)
   return BinExp{op.tokent, e1, e2, t1.pos, t1.line}
 }
-
-/*
-func (bin BinExp) Eval() float64 { 
-
-
-  return 0.0
-}
-*/

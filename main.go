@@ -18,9 +18,14 @@ func main() {
   //input := "..."
   tokens := parser.Lexer([]byte(argsWithProg[1])) 
   tree := parser.Parser(tokens)
+  for i,t := range tree { 
+    println(i, ": ",t)
+  }
   result, err := tree[0].Eval()
   if (err != nil) {
+    fmt.Println("found error in main")
     log.Fatal(err)
+    os.Exit(1)
   }
   println("eval: ", result)
   

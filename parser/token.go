@@ -17,6 +17,10 @@ const (
   DIV
   MUL
   POW
+  LT
+  GT
+  EQ
+  NEQ
   ASSIGN
   OP_UB
 
@@ -28,13 +32,6 @@ const (
   LBRACK
   RBRACK
   PAREN_UB
-
-  EQ_LB
-  LT
-  GT
-  EQ
-  NEQ
-  EQ_UB
 
   PUNCH_LB
   COLON
@@ -59,8 +56,20 @@ type Token struct {
   tokent int 
   val string
   pos,line int 
+  ext int
 }
 
+func (t Token) str() string { 
+  return t.val
+}
+
+func SimpleToken(tt int, val string, pos int) Token {
+  return Token{tt, val, pos, 1, 1} 
+}
+
+func RToken(tt int, val string, t Token) Token {
+  return Token{tt, val, t.pos, t.line, t.ext}
+}
 
 type TokenTRange struct { 
   lb,ub int
@@ -74,18 +83,23 @@ func SVR(ts []int) []TokenTRange {
   } 
   return ranges
 } 
-
+// Single-SingleValueRange
+func SSVR(t int) TokenTRange { 
+  return TokenTRange{t-1,t+1}
+}
 
 func PrettyPrint(ts []Token) {
   fmt.Println("Pretty printing: ")
   for _, s := range ts {
-    fmt.Println(s.val)
+    fmt.Print(s.str(), " ")
   }
+  fmt.Println()
 }
 
 func (t Token) isEqualType(ot Token) bool { 
   return t.tokent == ot.tokent
 }
+
 
 func (t Token) isEqual(ot TokenTRange) bool { 
   return t.tokent > ot.lb && t.tokent < ot.ub

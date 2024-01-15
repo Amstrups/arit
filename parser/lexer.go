@@ -37,46 +37,46 @@ func Lexer(input []byte) []Token {
     switch {
     case byteIsNumber(input[pos]):
       intEnd := findPos(input, pos, byteIsNumber)
-      tokens = append(tokens, Token{INT, string(input[pos : intEnd+1]), pos, 1})
+      tokens = append(tokens, SimpleToken(INT, string(input[pos : intEnd+1]), pos))
       pos = intEnd
     case byteIsVar(input[pos]):
       varEnd := findPos(input, pos, byteIsVar)
-      tokens = append(tokens, Token{VAR, string(input[pos : varEnd+1]), pos, 1})
+      tokens = append(tokens, SimpleToken(VAR, string(input[pos : varEnd+1]), pos))
       pos = varEnd
     case input[pos] == 43:
-      tokens = append(tokens, Token{ADD, "+", pos, 1})
+      tokens = append(tokens, SimpleToken(ADD, "+", pos))
     case input[pos] == 45:
-      tokens = append(tokens, Token{SUB, "-", pos, 1})
+      tokens = append(tokens, SimpleToken(SUB, "-", pos))
     case input[pos] == 47:
-      tokens = append(tokens, Token{DIV, "/", pos, 1})
+      tokens = append(tokens, SimpleToken(DIV, "/", pos))
     case input[pos] == 42:
-      tokens = append(tokens, Token{MUL, "*", pos, 1})
+      tokens = append(tokens, SimpleToken(MUL, "*", pos))
     case input[pos] == 40:
-      tokens = append(tokens, Token{LPAREN, "(", pos, 1})
+      tokens = append(tokens, SimpleToken(LPAREN, "(", pos))
     case input[pos] == 41:
-      tokens = append(tokens, Token{RPAREN, ")", pos, 1})
+      tokens = append(tokens, SimpleToken(RPAREN, ")", pos))
     case input[pos] == 91:
-      tokens = append(tokens, Token{LSQUARE, "[", pos, 1})
+      tokens = append(tokens, SimpleToken(LSQUARE, "[", pos))
     case input[pos] == 93:
-      tokens = append(tokens, Token{RSQUARE, "]", pos, 1})
+      tokens = append(tokens, SimpleToken(RSQUARE, "]", pos))
     case input[pos] == 123:
-      tokens = append(tokens, Token{LBRACK, "{", pos, 1})
+      tokens = append(tokens, SimpleToken(LBRACK, "{", pos))
     case input[pos] == 125:
-      tokens = append(tokens, Token{RBRACK, "}", pos, 1})
+      tokens = append(tokens, SimpleToken(RBRACK, "}", pos))
     case input[pos] == 46:
-      tokens = append(tokens, Token{DOT, ".", pos, 1})
+      tokens = append(tokens, SimpleToken(DOT, ".", pos))
     case input[pos] == 58:
-      tokens = append(tokens, Token{COLON, ":", pos, 1})
+      tokens = append(tokens, SimpleToken(COLON, ":", pos))
     case input[pos] == 59:
-      tokens = append(tokens, Token{SCOLON, ";", pos, 1})
+      tokens = append(tokens, SimpleToken(SCOLON, ";", pos))
     case input[pos] == 38:
-      tokens = append(tokens, Token{AND, "&", pos, 1})
+      tokens = append(tokens, SimpleToken(AND, "&", pos))
     case input[pos] == 124:
-      tokens = append(tokens, Token{OR, "|", pos, 1})
+      tokens = append(tokens, SimpleToken(OR, "|", pos))
     case input[pos] == 33:
-      tokens = append(tokens, Token{NEG, "!", pos, 1})
+      tokens = append(tokens, SimpleToken(NEG, "!", pos))
     case input[pos] == 94:
-      tokens = append(tokens, Token{POW, "^", pos, 1})
+      tokens = append(tokens, SimpleToken(POW, "^", pos))
     case input[pos]== 32: 
       fmt.Println("found space")
     default:
