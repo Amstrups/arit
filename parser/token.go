@@ -13,6 +13,8 @@ const (
   SUB
   DIV
   MUL
+  POW
+  ASSIGN
   OP_UB
 
   PAREN_LB
@@ -41,6 +43,7 @@ const (
   LOGIC_LB
   AND
   OR
+  NEG
   LOGIC_UB
 
   VARS_LB
