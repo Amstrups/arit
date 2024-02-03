@@ -51,7 +51,6 @@ const (
   VARS_UB
 )
 
-
 type Token struct {
   tokent int 
   val string

@@ -22,9 +22,15 @@ type Exp interface {
   String() string
 }
 
+type NegExp struct {
+  val Exp
+  pos, line int
+}
+
 type IntExp struct {
   val int 
   pos, line int 
+  
 }
 
 func (in IntExp) Eval() (float32,error) { 

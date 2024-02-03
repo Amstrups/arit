@@ -1,10 +1,14 @@
 package parser
 
 import (
-  "arit/util"
-  "fmt"
-  "log"
+	"arit/util"
+	"errors"
+	"fmt"
+	"log"
 )
+
+var ErrUnmatchedParentheses = errors.New("unmatched parentheses")
+
 var TERM_RANGE = TokenTRange{TERM_LB, TERM_UB}
 var OP_RANGE = TokenTRange{OP_LB, OP_UB}
 var PAREN_RANGE = TokenTRange{PAREN_LB, PAREN_UB} 
@@ -86,6 +90,9 @@ func preprocess(input []Token) ([]Token, error) {
     pos += inc 
   }
 
+  if !ps.IsEmpty() {
+    return o, ErrUnmatchedParentheses
+  }
   return o, nil
 } 
 
@@ -124,5 +131,4 @@ func Parser(input []Token) []Exp {
   }
   fmt.Println(exps)
   return exps
-
 }
