@@ -5,7 +5,30 @@ import (
 	"fmt"
 )
 
+
+func f(c chan int) {
+  x := []int{1,2,3,4,5,6,7,8,9,0}
+  for i, v := range x {
+    if i % 3 == 0 {
+      c <- v
+    }
+  }
+  close(c)
+
+}
+
+func channelTesting() { 
+  ch := make(chan int)
+  go f(ch)
+  for i := range ch {
+      fmt.Println(i) 
+      
+  }
+}
+
 func main() { 
+  channelTesting()
+  return
   l := lexersimple.NewSLexer("+-*/\n111.111")
   for { 
     p,t,s := l.Lex()
