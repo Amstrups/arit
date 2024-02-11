@@ -14,6 +14,7 @@ const (
 	SUB
 	MUL
 	DIV
+  POW
 
 	ASSIGN
 
