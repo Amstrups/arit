@@ -12,15 +12,11 @@ type EnrichedToken struct {
   s string
 }
 
-type state struct {
-  current int 
-  next int
-}
 
 type Parser struct { 
   lexer l.GLexer
   exps []Exp 
-  states []int
+  stack *stack 
   lookahead *EnrichedToken
 }
 
@@ -28,21 +24,21 @@ func NewParser(l l.GLexer) *Parser {
   return &Parser{
     lexer: l,
     exps: []Exp{},
-    states: []int{0}, 
+    stack: NewStack(0),
   }
 }
 
-func (p *Parser) popState() {
-  p.states = p.states[:len(p.states)-2] 
-}
-
 func (p *Parser) reduce() {
-  
+  switch p.stack.peek() {
+    case 0:
+
+  }
 }
 
-func (p *Parser) shift() {  
+func (p *Parser) shift(state int) {  
     pos, t, s := p.lexer.Lex()
     p.lookahead = &EnrichedToken{pos,t,s}
+    p.stack.push(state)
 }
 
 func (p *Parser) parse() {
@@ -50,21 +46,21 @@ func (p *Parser) parse() {
 }
 
 func (p *Parser) goTo() { 
-  switch state := p.states[len(p.states)-1]; state { 
+  switch p.stack.peek()  { 
   case 0:
-    p.states = append(p.states, 1)
+    p.stack.push(1)
   case 3:
-    p.states = append(p.states, 9)
+    p.stack.push(9)
   case 4:
-    p.states = append(p.states, 10)
+    p.stack.push(10)
   case 5:
-    p.states = append(p.states, 11)
+    p.stack.push(11)
   case 6:
-    p.states = append(p.states, 12)
+    p.stack.push(12)
   case 7:
-    p.states = append(p.states, 13)
+    p.stack.push(13)
   case 8:
-    p.states = append(p.states, 14)
+    p.stack.push(14)
   default:
     fmt.Println("default")
   }
