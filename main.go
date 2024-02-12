@@ -2,11 +2,24 @@ package main
 
 import (
 	lexer "arit/lexer_simple"
-  parser "arit/parser_simple"
+	"arit/modes/prime"
+	parser "arit/parser_simple"
+	"flag"
 	"fmt"
 )
 
+
 func main() { 
+  var primeFlag = flag.Int("p", -1, "check if input is primenumber")
+  if primeFlag == nil {
+    fmt.Println("nothing to do")
+    return
+  }
+  flag.Parse()
+  prime.IsPrime(*primeFlag) 
+
+
+  return 
   l := lexer.NewSLexer("+-*/\n111.111")
   p := parser.NewParser(l)
   stmt := p.Parse()
