@@ -5,6 +5,67 @@ import (
   "fmt"
 )
 
+/*
+-- (E)BNF syntax --
+1: expr      ::= sum
+2: expr      ::= product
+3: expr      ::= value
+
+
+4: sum       ::= sum addsub prodvalue
+5: sum       ::= prodvalue addsub prodvalue
+6: sum       ::= sum '-' parensum
+7: sum       ::= prodvalue '-' parensum
+
+8: addsub    ::= '+' | '-'
+
+9: parensum  ::= '(' sum ')'
+
+10: prodvalue ::= value
+11: prodvalue ::= product
+
+12: product   ::= prodterm muldiv value
+13: product   ::= prodterm muldiv parensum
+14: product   ::= prodterm '/' parenprod
+
+15: prodterm  ::= prodvalue
+16: prodterm  ::= parensum
+
+17: parenprod ::= '(' product ')'
+
+18: value     ::= number
+
+-- Grammophone syntax --
+Ref: https://mdaines.github.io/grammophone/#/ 
+
+1: expr      -> sum .
+2: expr      -> product .
+3: expr      -> value .
+
+
+4: sum       -> sum addsub prodvalue .
+5: sum       -> prodvalue addsub prodvalue .
+6: sum       -> sum minus parensum .
+7: sum       -> prodvalue minus parensum .
+
+8: addsub    -> plus | minus . 
+
+9: parensum  -> lp sum rp . 
+
+10: prodvalue -> value .
+11: prodvalue -> product .
+
+12: product   -> prodterm muldiv value .
+13: product   -> prodterm muldiv parensum .
+14: product   -> prodterm div parenprod .
+
+15: prodterm  -> prodvalue .
+16: prodterm  -> parensum .
+
+17: parenprod -> lp product rp .
+
+18: value     -> number .
+*/
 
 type EnrichedToken struct {
   pos l.Position
@@ -27,10 +88,20 @@ func NewParser(l l.GLexer) *Parser {
     stack: NewStack(0),
   }
 }
+/*
+0: E ::= number 
+1: E ::= ( E )
+2: E ::= E ADD E
+3: E ::= E MIN E
+4: E ::= E MUL E
+5: E ::= E DIV E
+6: E ::= MIN E
 
-func (p *Parser) reduce() {
-  switch p.stack.peek() {
+*/
+func (p *Parser) reduce(rule int) {
+  switch {
     case 0:
+
 
   }
 }
@@ -42,7 +113,9 @@ func (p *Parser) shift(state int) {
 }
 
 func (p *Parser) parse() {
-  
+  while (p.lookahead.tok != l.EOF) {
+    
+  }
 }
 
 func (p *Parser) goTo() { 
