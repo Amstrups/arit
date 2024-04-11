@@ -1,6 +1,16 @@
 import re
 
 
+def preprocess(str):
+    table = re.sub(r'\n\s*', '\\n', str)
+    table = re.sub(r'<td class="">', '<td>', table)
+    table = re.sub(r'\s*->\s*', '##', table)
+    #table = re.sub(r'<(/*)ul\\n>', '', table)
+    table = table.replace("<ul>", "")
+    table = table.replace("</ul>", "")
+    return table
+
+
 def inpiece(str, left, right, endFinder, rest=False):
     start = str.find(left)
     end = endFinder(right)
@@ -61,46 +71,35 @@ def section(str, n):
         try:
             row, fields = piece(fields, "<td>", "</td>", True)
             out.append(sanitize(row))
-        except Exception:
-            print("error:")
+        except Exception as e:
+            print("error:", e)
     return ",".join(out)
 
 
-with open("table.html", "r") as f:
-    table = f.read()
-    f.close()
+def extract(str):
+    out = ""
+    table = preprocess(str)
+    fullHead, tail = piece(table, "<thead>", "</thead>", True)
+    headers = piece(fullHead, "<tr>", "</tr>")
 
-table = re.sub(r'\n\s*', '\\n', table)
-table = re.sub(r'<td class="">', '<td>', table)
-table = re.sub(r'\s*->\s*', '##', table)
-table = table.replace('<ul>\n', "")
-table = table.replace('</ul>\n', "")
+    n, scrubbed = scrub(headers)
 
+    out = scrubbed + "\n"
 
-fullHead, body = piece(table, "<thead>", "</thead>", True)
-headers = piece(fullHead, "<tr>", "</tr>")
-
-n, scrubbed = scrub(headers)
-
-tail = body
-#print(table)
-with open("table.csv", "w") as f:
-    f.write(scrubbed + "\n")
     while True:
         try:
             head, tail = piece(tail, "<tr>", "</tr>", True)
-            f.write(section(head,n) + "\n")
+            out += section(head,n) + "\n"
         except Exception:
-            f.close()
-            exit(1)
-# head, tail = piece(body, "<tr>", "</tr>", True)
-# print(head)
-# for i in range(16):
-#     head, tail = piece(tail, "<tr>", "</tr>", True)
-#   #  print(head.replace("td>\n", "td>"))
-# section(head)
+            return out
 
-# body = piece(table, "<tbody>", "</tbody>")
 
-# print(scrub(headers))
-# print(scrub(head))
+with open("table2.html", "r") as f:
+    table = f.read()
+    f.close()
+
+table = extract(table)
+
+with open("table3.csv", "w") as f:
+    f.write(table)
+    f.close()
