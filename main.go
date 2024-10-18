@@ -1,26 +1,14 @@
 package main
 
 import (
-	"arit/parsing"
-	lexer "arit/parsing/lexer"
-	parser "arit/parsing/parser"
-	"fmt"
+	"github.com/amstrups/nao"
+	"github.com/davecgh/go-spew/spew"
 )
 
 func main() {
-	l := lexer.New("2+2")
-	for {
-		tok := l.Lex()
-		if tok.T == parsing.EOF {
-			return
+	println("hello world")
 
-		}
-		fmt.Println(tok.T)
-
-	}
-	p := parser.New(l)
-	stmt := p.Parse()
-	fmt.Println(stmt)
+	spew.Dump(nao.Run("2+2;0b011x8"))
 }
 
 /*
