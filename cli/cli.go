@@ -1,45 +1,66 @@
 package cli
 
 import (
-	"arit/ui"
+	"arit/modules/random"
 	"errors"
 	"fmt"
+	"strings"
 )
 
-func help(input []string) string {
-	if len(input) == 0 {
-		return "Cannot process empty list of args"
-	}
-	switch {
-	default:
-		return "unknown topic: " + input[0]
-	}
-
-}
-
-func Parse(input []string) error {
-	if len(input) == 0 {
+func Parse(args []string) error {
+	if len(args) == 0 {
 		return errors.New("Cannot process empty list of args")
 	}
 
-	switch input[0] {
+	switch args[0] {
 	case "help":
 		msg := ""
-		if len(input) > 1 {
-			msg = help(input[1:])
+		if len(args) > 1 {
+			msg = help(args[1:])
 		} else {
 			msg = "standard help messsage"
 		}
 		fmt.Println(msg)
 		return nil
-
 	case "shell", "sh":
 		return shell()
 	case "ui":
-		return ui.Run()
-	case "rand":
+		return ui()
+	default:
+		return module(args)
+	}
+}
+
+func help(args []string) string {
+	if len(args) > 1 {
+		return "unknown topic: " + strings.Join(args, " ")
+	}
+
+	mod := args[0]
+
+	switch mod {
+	case "rand", "random":
+		return random.Help()
+	default:
+		return "unknown module: " + mod
+	}
+
+}
+
+func module(args []string) error {
+	mod := args[0]
+	modArgs := args[1:]
+
+	switch mod {
+	case "r", "rand", "random":
+		val, err := random.Eval(modArgs)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%v\n", val)
 		return nil
 	default:
-		return errors.New("arg: " + input[0] + " is not supported yet")
+
+		return errors.New("arg: " + args[0] + " is not supported")
 	}
 }

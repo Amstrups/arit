@@ -7,7 +7,6 @@ import (
 )
 
 func shell() error {
-
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Print("\033[38;2;120;166;248m>>> ")
