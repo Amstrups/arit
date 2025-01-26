@@ -102,7 +102,7 @@ func listen(state *tui.State) {
 }
 
 func read(state *tui.State) {
-	file, err := os.Create("log.txt")
+	file, err := os.Create("logs/log.txt")
 	if err != nil {
 		fmt.Println(err)
 		panic(0)

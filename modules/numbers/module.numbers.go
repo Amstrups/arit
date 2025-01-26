@@ -1,4 +1,4 @@
-package random
+package numbers
 
 import (
 	"errors"
@@ -23,3 +23,4 @@ func Eval(args []string) (any, error) {
 		return nil, errors.New("arg: " + args[0] + " is not supported")
 	}
 }
+

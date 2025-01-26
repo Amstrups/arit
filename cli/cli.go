@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"arit/modules/prime"
 	"arit/modules/random"
 	"errors"
 	"fmt"
@@ -26,6 +27,8 @@ func Parse(args []string) error {
 		return shell()
 	case "ui":
 		return ui()
+	case "server":
+		return errors.New("server NYI")
 	default:
 		return module(args)
 	}
@@ -39,8 +42,10 @@ func help(args []string) string {
 	mod := args[0]
 
 	switch mod {
-	case "rand", "random":
+	case "r", "rand", "random":
 		return random.Help()
+	case "p", "prime":
+		return prime.Help()
 	default:
 		return "unknown module: " + mod
 	}
@@ -54,6 +59,13 @@ func module(args []string) error {
 	switch mod {
 	case "r", "rand", "random":
 		val, err := random.Eval(modArgs)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%v\n", val)
+		return nil
+	case "p", "prime":
+		val, err := prime.Eval(modArgs)
 		if err != nil {
 			return err
 		}
