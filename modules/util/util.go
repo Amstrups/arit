@@ -1,9 +1,21 @@
-package modules
+package preprocess
 
 import (
 	"errors"
 	"strconv"
+	"strings"
 )
+
+func Single(args []string) (string, error) {
+	if len(args) != 1 {
+		return "", errors.New(" requires exactly 1 argument")
+	}
+	return args[0], nil
+}
+
+func Trim(str string) string {
+	return strings.TrimSuffix(strings.TrimPrefix(str, "\""), "\"")
+}
 
 func SingleInt64(args []string) (int64, error) {
 	if len(args) != 1 {
