@@ -75,6 +75,9 @@ func (*Random) number() int64 {
 		xor ^= rem & uint64(1)
 		rem >>= 1
 	}
+	if xor == 1 {
+		return int64(x)
+	}
 
 	return 17
 }
