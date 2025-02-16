@@ -1,6 +1,7 @@
 package submodules
 
 import (
+	"arit/cli/parser"
 	u "arit/modules/util"
 	"fmt"
 	"math/rand"
@@ -18,28 +19,27 @@ func (*Random) Description() string {
 	return "Module for randomess in arit"
 }
 
-func (r *Random) Parse(Args []string) (any, error) {
-	if len(Args) == 0 {
+func (r *Random) Parse(cmd parser.Command) (any, error) {
+	if len(cmd.Args) == 0 {
 		return r.number(), nil
 	}
-	f := Args[0]
-	args := Args[1:]
 
-	switch f {
+	switch cmd.Func {
 	case "num", "number":
-		if len(args) > 0 {
-			return nil, fmt.Errorf("subcommand %s %s does not accept any args", "random", f)
-
+		if len(cmd.Args) > 0 {
+			return nil, fmt.Errorf("subcommand %s %s does not accept any args",
+				"random", cmd.Func)
 		}
+
 		return r.number(), nil
 	case "gen", "gen64", "generate64":
-		n, a, b, err := u.TripleInt64(args)
+		n, a, b, err := u.TripleInt64(cmd.Args)
 		if err != nil {
 			return nil, err
 		}
 		return r.generate64(n, a, b)
 	case "cap", "capitilization":
-		str, err := u.Single(args)
+		str, err := u.Single(cmd.Args)
 		if err != nil {
 			return nil, err
 		}
