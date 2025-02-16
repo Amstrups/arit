@@ -1,8 +1,12 @@
 package cli
 
 import (
+	"arit/cli/parser"
 	"arit/modules"
 	"errors"
+	"fmt"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 const helpMsg = "standard help message"
@@ -11,6 +15,13 @@ func Parse(args []string) error {
 	if len(args) == 0 {
 		return errors.New("Cannot process empty list of args")
 	}
+
+	parser := parser.CmdParser{}
+  fmt.Println(args)
+	parser.ParseArgs(args)
+  spew.Dump(parser.Commands)
+	return nil
+
 
 	ste := &State{
 		Vars:   map[IDENT]any{},
