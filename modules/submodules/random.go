@@ -6,9 +6,14 @@ import (
 	"math/rand"
 )
 
+const Name = "Random"
+
 type Random struct{}
 
-func (*Random) Name() string { return "Random" }
+func (*Random) Name() string { return Name }
+func (*Random) Keys() []string {
+	return []string{"random", "rand", "Random"}
+}
 func (*Random) Description() string {
 	return "Module for randomess in arit"
 }

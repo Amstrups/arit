@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func shell() error {
+func shell(ste *State) error {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Print("\033[38;2;120;166;248m>>> ")
@@ -14,6 +14,10 @@ func shell() error {
 		scanner.Scan()
 
 		input := scanner.Text()
+
+		if input == "ls" {
+
+		}
 
 		if input == "exit" {
 			return nil
