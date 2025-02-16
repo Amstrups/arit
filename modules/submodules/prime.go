@@ -2,8 +2,8 @@ package submodules
 
 import (
 	"errors"
-	"fmt"
 
+	"arit/cli/parser"
 	u "arit/modules/util"
 )
 
@@ -19,29 +19,23 @@ func (*Prime) Description() string {
 	return "Module for primeness in arit"
 }
 
-func (p *Prime) Parse(Args []string) (any, error) {
-	if len(Args) == 0 {
-		return nil,
-			fmt.Errorf("Prime module does not have non-arg default function")
-	}
-	f := Args[0]
-	args := Args[1:]
+func (p *Prime) Parse(cmd parser.Command) (any, error) {
 
-	switch f {
+	switch cmd.Func {
 	case "full":
-		n, err := u.SingleInt64(args)
+		n, err := u.SingleInt64(cmd.Args)
 		if err != nil {
 			return nil, err
 		}
 		return p.isprime(n)
 	case "is":
-		n, err := u.SingleInt64(args)
+		n, err := u.SingleInt64(cmd.Args)
 		if err != nil {
 			return nil, err
 		}
 		return p.mersenne(n)
 	default:
-		n, err := u.SingleInt64(Args)
+		n, err := u.SingleInt64(cmd.Args)
 		if err != nil {
 			return nil, err
 		}

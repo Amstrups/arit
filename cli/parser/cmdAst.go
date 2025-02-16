@@ -24,7 +24,7 @@ const (
 type (
 	Argument struct {
 		T CmdToken
-		V any
+		V string
 	}
 
 	Flag interface {
