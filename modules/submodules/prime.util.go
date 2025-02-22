@@ -7,6 +7,11 @@ import (
 	"strings"
 )
 
+const (
+	factorFile      = "./bin/factors_file"
+	factorTableFile = "./bin/factors_table"
+)
+
 var smallPrime = map[uint64]bool{
 	1:  true,
 	2:  true,
@@ -35,7 +40,6 @@ var smallPrime = map[uint64]bool{
 	89: true,
 	97: true,
 }
-
 
 func byte32ToInt64(read []byte) int64 {
 
