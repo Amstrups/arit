@@ -3,6 +3,7 @@ package submodules
 import (
 	"errors"
 	"fmt"
+	"math"
 	"math/bits"
 
 	"arit/cli/parser"
@@ -52,7 +53,8 @@ func (p *Prime) Parse(cmd parser.Command) (any, error) {
 }
 
 // Returns whether given number p is prime
-func (*Prime) isprime(p int64) (bool, error) {
+// should be AKS at some point
+func (mod *Prime) isprime(p int64) (bool, error) {
 	if p < 1 {
 		return false, errors.New("negative numbers cannot be prime")
 	}
@@ -61,15 +63,18 @@ func (*Prime) isprime(p int64) (bool, error) {
 		return smallPrime[uint64(p)], nil
 	}
 
-	if p <= 1 || p%2 == 0 || p%3 == 0 {
-		return false, nil
+	psq := int64(math.Ceil(math.Sqrt(float64(p))))
+
+	var i int64 = 2
+
+	for i < psq {
+		if (p % i) == 0 {
+			return mod.isprime(i)
+		}
+
+		i++
 	}
 
-	for i := int64(5); i*i <= p; i += 6 {
-		if p%i == 0 || p%(i+2) == 0 {
-			return false, nil
-		}
-	}
 	return true, nil
 }
 
