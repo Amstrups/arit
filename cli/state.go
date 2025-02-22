@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"arit/cli/parser"
 	"arit/modules"
 	"fmt"
 )
@@ -41,21 +42,21 @@ func (s *State) ToString(ident IDENT, w int) string {
 
 }
 
-func (s *State) Parse(Args []string) error {
-	if len(Args) == 0 {
-		fmt.Println("Cannot process empty list of args")
-		return nil
+func (s *State) Parse(cmds []parser.Command) error {
+	if len(cmds) > 1 {
+		panic("pipe is not supported in arit yet")
 	}
 
-	name := Args[0]
-	mod, ok := s.Submodules[name]
+	cmd := cmds[0]
+
+	mod, ok := s.Submodules[cmd.Module]
 
 	if !ok {
-		fmt.Printf("Could not locate a module with name %s", name)
+		fmt.Printf("Could not locate a module with name %s", cmd.Module)
 		return nil
 	}
 
-	value, err := mod.Parse(Args[1:])
+	value, err := mod.Parse(cmd)
 	if err != nil {
 		return err
 	}
@@ -63,5 +64,4 @@ func (s *State) Parse(Args []string) error {
 	fmt.Println(value)
 
 	return nil
-
 }

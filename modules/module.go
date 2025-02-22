@@ -1,12 +1,13 @@
 package modules
 
 import (
+	"arit/cli/parser"
 	subs "arit/modules/submodules"
 	"fmt"
 )
 
 type Submodule interface {
-	Parse([]string) (any, error)
+	Parse(parser.Command) (any, error)
 	Name() string
 	Keys() []string
 	Description() string
@@ -44,5 +45,4 @@ func Full() Module {
 	m.Register(&subs.Prime{})
 
 	return m
-
 }

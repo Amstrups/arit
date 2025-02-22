@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 )
@@ -34,7 +33,7 @@ func (l *CmdLexer) Next() (x string, t CmdToken) {
 	flagNumberValueReg, _ := regexp.Compile("^=([0-9]+(\\.[0-9]*){0,1})(\\s*|$)")
 	flagStringValueReg, _ := regexp.Compile("^=\"([A-z]+)\"(\\s*|$)")
 
-	fmt.Printf("State: %v\n", l.input[l.head:])
+	//fmt.Printf("State: %v\n", l.input[l.head:])
 
 	if x = pipeReg.FindString(l.input[l.head:]); x != "" {
 		l.head += len(x)

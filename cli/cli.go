@@ -4,9 +4,6 @@ import (
 	"arit/cli/parser"
 	"arit/modules"
 	"errors"
-	"fmt"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 const helpMsg = "standard help message"
@@ -17,18 +14,19 @@ func Parse(args []string) error {
 	}
 
 	parser := parser.CmdParser{}
-  fmt.Println(args)
-	parser.ParseArgs(args)
-  spew.Dump(parser.Commands)
-	return nil
 
+	cmds := parser.ParseArgs(args)
 
 	ste := &State{
 		Vars:   map[IDENT]any{},
 		Module: modules.Full(),
 	}
 
-	switch args[0] {
+	if len(cmds) == 0 {
+		panic("cannot process emtpy arguments list")
+	}
+
+	switch cmds[0].Module {
 	case "shell", "sh":
 		return shell(ste)
 	case "ui":
@@ -36,6 +34,6 @@ func Parse(args []string) error {
 	case "server":
 		return errors.New("server NYI")
 	default:
-		return ste.Parse(args)
+		return ste.Parse(cmds)
 	}
 }

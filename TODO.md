@@ -11,6 +11,9 @@
     - ~~*Prime*$(a,b) \rightarrow$ Return random prime $p \in [a,b)$~~
 - Prime
     - ~~*Is*$(p) \rightarrow$ Return wheter $p$ is prime~~
+- Connect
+    - Thinking a light style equal parts "Live Share" and "tmux"
+    - "live mux" from Wish.com
 
 ## Commands
 

@@ -2,9 +2,16 @@ package submodules
 
 import (
 	"errors"
+	"fmt"
+	"math/bits"
 
 	"arit/cli/parser"
 	u "arit/modules/util"
+)
+
+const (
+	factorFile      = "./bin/file"
+	factorTableFile = "./bin/table"
 )
 
 type Prime struct{}
@@ -20,20 +27,26 @@ func (*Prime) Description() string {
 }
 
 func (p *Prime) Parse(cmd parser.Command) (any, error) {
-
 	switch cmd.Func {
-	case "full":
+	case "is", "full":
 		n, err := u.SingleInt64(cmd.Args)
 		if err != nil {
 			return nil, err
 		}
 		return p.isprime(n)
-	case "is":
+
+	case "mersenne":
 		n, err := u.SingleInt64(cmd.Args)
 		if err != nil {
 			return nil, err
 		}
-		return p.mersenne(n)
+		return p.isprime(n)
+	case "factors", "fac":
+		n, err := u.SingleInt64(cmd.Args)
+		if err != nil {
+			return nil, err
+		}
+		return p.factors2(n)
 	default:
 		n, err := u.SingleInt64(cmd.Args)
 		if err != nil {
@@ -66,50 +79,54 @@ func (*Prime) isprime(p int64) (bool, error) {
 }
 
 // Returns whether given number p is a mersenne prime
-func (*Prime) mersenne(p int64) (bool, error) {
+func (mod *Prime) mersenne(p int64) (bool, error) {
+	if p < 1 {
+		return false, errors.New("negative numbers cannot be prime")
+	}
+
 	if p_ := (p + 1) & p; p_ != 0 {
 		return false, nil
 	}
 
-	if p < 1 {
-		return false, errors.New("negative numbers cannot be prime")
-	}
-
-	if p <= 3 && p > 1 {
-		return true, nil
-	}
-
-	if p <= 1 || p%2 == 0 || p%3 == 0 {
-		return false, nil
-	}
-
-	for i := int64(5); i*i <= p; i += 6 {
-		if p%i == 0 || p%(i+2) == 0 {
-			return false, nil
-		}
-	}
-	return true, nil
+	return mod.isprime(p)
 }
 
 // Returns list of non-distinct aliquot parts of p
 // Which is fancy talk for "prime factors"
-func (*Prime) factors(p int64) (bool, error) {
+func (*Prime) factors2(p int64) ([]uint32, error) {
+	if p > 1<<32 {
+		return []uint32{}, fmt.Errorf("ask someone else")
+	}
+
 	if p < 1 {
-		return false, errors.New("negative numbers cannot be prime")
+		return []uint32{}, fmt.Errorf("cannot factorize negative numbers")
 	}
 
-	if p <= 3 && p > 1 {
-		return true, nil
+	if p < (1<<32)-1 {
+		return _read(factorFile, factorTableFile, p)
 	}
 
-	if p <= 1 || p%2 == 0 || p%3 == 0 {
-		return false, nil
+	return []uint32{}, fmt.Errorf("now yet impl for p larger than 2^16")
+
+	lg2 := bits.LeadingZeros64(uint64(p))
+
+	// i thought this was very clever
+	factors := make([]uint32, lg2)
+	idx := 0
+
+	rem := p
+
+	for rem&1 == 0 {
+		factors[idx] = 2
+		idx++
+		rem >>= 1
 	}
 
-	for i := int64(5); i*i <= p; i += 6 {
-		if p%i == 0 || p%(i+2) == 0 {
-			return false, nil
-		}
+	for rem%2 == 0 {
+		factors[idx] = 2
+		idx++
+		rem >>= 1
 	}
-	return true, nil
+
+	return factors, nil
 }
