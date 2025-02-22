@@ -62,8 +62,8 @@ func (*Prime) isprime(p int64) (bool, error) {
 		return false, errors.New("negative numbers cannot be prime")
 	}
 
-	if p <= 3 && p > 1 {
-		return true, nil
+	if p < 100 {
+		return smallPrime[uint64(p)], nil
 	}
 
 	if p <= 1 || p%2 == 0 || p%3 == 0 {
