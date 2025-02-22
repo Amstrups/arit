@@ -9,11 +9,6 @@ import (
 	u "arit/modules/util"
 )
 
-const (
-	factorFile      = "./bin/file"
-	factorTableFile = "./bin/table"
-)
-
 type Prime struct{}
 
 func (*Prime) Name() string {
