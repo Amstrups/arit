@@ -1,6 +1,8 @@
-package interpreter
+package submodules
 
 import (
+	"arit/modules"
+	"arit/modules/util"
 	"fmt"
 	"strconv"
 	"strings"
@@ -10,6 +12,29 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
+var Interpreter = modules.Submodule{
+	Name: "Interpreter",
+	Keys: []string{"eval", "evaluate", "interpreter", "Interpreter"},
+	Help: "There is no help.",
+}
+
+func init() {
+	eval := &modules.Function{
+		Name: "Evaluate",
+		Help: "Evaluate expression",
+		N:    -1,
+		F: func(args []string) (any, error) {
+			return 0, fmt.Errorf("Eval: NYI")
+		},
+	}
+
+	funcs := map[string]*modules.Function{
+		util.DEFAULT_KEY: eval,
+	}
+
+	Interpreter.Funcs = funcs
+}
+
 func EvalStmt(stmt ast.Stmt) any {
 	switch st := stmt.(type) {
 	case *ast.ExprStmt:
@@ -17,7 +42,6 @@ func EvalStmt(stmt ast.Stmt) any {
 	default:
 		panic("evalStmt")
 	}
-
 }
 
 func evalBinary(e *ast.BasicLit) int {

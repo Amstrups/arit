@@ -1,39 +1,53 @@
 package cli
 
 import (
-	"arit/cli/parser"
 	"arit/modules"
+	"arit/modules/submodules"
 	"errors"
 )
 
 const helpMsg = "standard help message"
+
+type MODE int8
+
+const (
+	CLI MODE = iota
+	SHELL
+	SERVER
+	TUI
+)
+
+var AvaliableModules = map[string]*modules.Submodule{}
+
+func addSubmodule(sub *modules.Submodule) {
+	for _, k := range sub.Keys {
+		AvaliableModules[k] = sub
+	}
+}
+
+func init() {
+	addSubmodule(&submodules.Random)
+	addSubmodule(&submodules.Prime)
+}
 
 func Parse(args []string) error {
 	if len(args) == 0 {
 		return errors.New("Cannot process empty list of args")
 	}
 
-	parser := parser.CmdParser{}
-
-	cmds := parser.ParseArgs(args)
-
 	ste := &State{
-		Vars:   map[IDENT]any{},
-		Module: modules.Full(),
+		Vars:    map[IDENT]any{},
+		Modules: AvaliableModules,
 	}
 
-	if len(cmds) == 0 {
-		panic("cannot process emtpy arguments list")
-	}
-
-	switch cmds[0].Module {
+	switch args[0] {
 	case "shell", "sh":
 		return shell(ste)
 	case "ui":
-		return ui()
+		return ui(ste)
 	case "server":
 		return errors.New("server NYI")
 	default:
-		return ste.Parse(cmds)
+		return ste.Parse(args)
 	}
 }

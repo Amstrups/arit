@@ -168,7 +168,7 @@ func squares() (tui.Square, tui.Square, tui.Square) {
 	return topleft, topright, bottom
 }
 
-func ui() error {
+func ui(state *State) error {
 	os.Stdout.Write(altbuff_up())
 
 	ste := tui.New()

@@ -1,48 +1,44 @@
 package modules
 
 import (
-	"arit/cli/parser"
-	subs "arit/modules/submodules"
+	"arit/modules/util"
 	"fmt"
 )
 
-type Submodule interface {
-	Parse(parser.Command) (any, error)
-	Name() string
-	Keys() []string
-	Description() string
-}
+type (
+	F func([]string) (any, error)
 
-type Module struct {
-	Submodules map[string]Submodule
-}
-
-func (m *Module) Register(sub Submodule) error {
-	name := sub.Name()
-	_, ok := m.Submodules[name]
-	if ok {
-		return fmt.Errorf("module %s already exists", name)
+	Submodule struct {
+		Name, Help string
+		Keys       []string
+		Funcs      map[string]*Function
 	}
 
-	m.Submodules[name] = sub
+	Function struct {
+		Name, Help string
+		N          int
+		F
+	}
+)
 
-	for _, k := range sub.Keys() {
-		if k == name {
-			continue
+func (sub *Submodule) Run(args []string) (any, error) {
+	if len(args) == 0 {
+		f, ok := sub.Funcs[util.DEFAULT_KEY]
+		if !ok {
+			return nil, fmt.Errorf("module %s does not contain default func", sub.Name)
 		}
-		m.Submodules[k] = sub
+
+		if f.N > 0 {
+			return nil, fmt.Errorf("default module for %s require args", sub.Name)
+		}
+
+		return f.F([]string{})
 	}
 
-	return nil
-}
-
-func Full() Module {
-	m := Module{
-		Submodules: map[string]Submodule{},
+	f, f_ok := sub.Funcs[args[0]]
+	if !f_ok {
+		return nil, fmt.Errorf("%s %s: unknown command", args[0], args[1])
 	}
 
-	m.Register(&subs.Random{})
-	m.Register(&subs.Prime{})
-
-	return m
+	return f.F(args[1:])
 }

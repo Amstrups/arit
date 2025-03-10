@@ -6,55 +6,71 @@ import (
 	"math"
 	"math/bits"
 
-	"arit/cli/parser"
+	"arit/modules"
 	u "arit/modules/util"
 )
 
-type Prime struct{}
-
-func (*Prime) Name() string {
-	return "Prime"
-}
-func (*Prime) Keys() []string {
-	return []string{"prime", "p"}
-}
-func (*Prime) Description() string {
-	return "Module for primeness in arit"
+var Prime = modules.Submodule{
+	Name: "Prime",
+	Keys: []string{"prime", "p", "Prime"},
+	Help: "There is no help.",
 }
 
-func (p *Prime) Parse(cmd parser.Command) (any, error) {
-	switch cmd.Func {
-	case "is", "full":
-		n, err := u.SingleInt64(cmd.Args)
-		if err != nil {
-			return nil, err
-		}
-		return p.isprime(n)
-
-	case "mersenne":
-		n, err := u.SingleInt64(cmd.Args)
-		if err != nil {
-			return nil, err
-		}
-		return p.isprime(n)
-	case "factors", "fac":
-		n, err := u.SingleInt64(cmd.Args)
-		if err != nil {
-			return nil, err
-		}
-		return p.factors2(n)
-	default:
-		n, err := u.SingleInt64(cmd.Args)
-		if err != nil {
-			return nil, err
-		}
-		return p.isprime(n)
+func init() {
+	check := &modules.Function{
+		Name: "Prime number",
+		Help: "Returns whether given number p is prime",
+		N:    1,
+		F: func(args []string) (any, error) {
+			n, err := u.SingleInt64(args)
+			if err != nil {
+				return nil, err
+			}
+			return isprime(n)
+		},
 	}
+
+	mersenne := &modules.Function{
+		Name: "Mersenne",
+		Help: "Returns whether given number p is a mersenne prime",
+		N:    1,
+		F: func(args []string) (any, error) {
+			n, err := u.SingleInt64(args)
+			if err != nil {
+				return nil, err
+			}
+			return mersenne(n)
+		},
+	}
+
+	factors := &modules.Function{
+		Name: "Prime factors",
+		Help: "Returns list of non-distinct aliquot parts of p",
+		N:    1,
+		F: func(args []string) (any, error) {
+			n, err := u.SingleInt64(args)
+			if err != nil {
+				return nil, err
+			}
+			return factors2(n)
+		},
+	}
+
+	funcs := map[string]*modules.Function{
+		u.DEFAULT_KEY: check,
+		"is":          check,
+		"full":        check,
+		"mersenne":    mersenne,
+		"factors":     factors,
+		"fac":         factors,
+	}
+
+	Prime.Funcs = funcs
 }
 
 // Returns whether given number p is prime
 // should be AKS at some point
-func (mod *Prime) isprime(p int64) (bool, error) {
+func isprime(p int64) (bool, error) {
 	if p < 1 {
 		return false, errors.New("negative numbers cannot be prime")
 	}
@@ -69,7 +85,7 @@ func (mod *Prime) isprime(p int64) (bool, error) {
 
 	for i < psq {
 		if (p % i) == 0 {
-			return mod.isprime(i)
+			return isprime(i)
 		}
 
 		i++
@@ -79,7 +95,7 @@ func (mod *Prime) isprime(p int64) (bool, error) {
 }
 
 // Returns whether given number p is a mersenne prime
-func (mod *Prime) mersenne(p int64) (bool, error) {
+func mersenne(p int64) (bool, error) {
 	if p < 1 {
 		return false, errors.New("negative numbers cannot be prime")
 	}
@@ -88,12 +104,12 @@ func (mod *Prime) mersenne(p int64) (bool, error) {
 		return false, nil
 	}
 
-	return mod.isprime(p)
+	return isprime(p)
 }
 
 // Returns list of non-distinct aliquot parts of p
 // Which is fancy talk for "prime factors"
-func (*Prime) factors2(p int64) ([]uint32, error) {
+func factors2(p int64) ([]uint32, error) {
 	if p > 1<<32 {
 		return []uint32{}, fmt.Errorf("ask someone else")
 	}

@@ -1,60 +1,88 @@
 package submodules
 
 import (
-	"arit/cli/parser"
+	"arit/modules"
 	u "arit/modules/util"
 	"fmt"
 	"math/rand"
 )
 
-const Name = "Random"
-
-type Random struct{}
-
-func (*Random) Name() string { return Name }
-func (*Random) Keys() []string {
-	return []string{"random", "rand", "Random"}
-}
-func (*Random) Description() string {
-	return "Module for randomess in arit"
+var Random = modules.Submodule{
+	Name: "Random",
+	Keys: []string{"random", "rand", "Random"},
+	Help: "There is no help.",
 }
 
-func (r *Random) Parse(cmd parser.Command) (any, error) {
-	if len(cmd.Args) == 0 {
-		return r.number(), nil
+func init() {
+	number := &modules.Function{
+		Name: "Number",
+		Help: "Returns the most random number, sometimes",
+		N:    0,
+		F: func(args []string) (any, error) {
+			if len(args) > 0 {
+				return nil, fmt.Errorf("%s %s does not accept any args",
+					"random", "num/number/default")
+			}
+			return number(), nil
+		},
 	}
 
-	switch cmd.Func {
-	case "num", "number":
-		if len(cmd.Args) > 0 {
-			return nil, fmt.Errorf("subcommand %s %s does not accept any args",
-				"random", cmd.Func)
-		}
-
-		return r.number(), nil
-	case "gen", "gen64", "generate64":
-		n, a, b, err := u.TripleInt64(cmd.Args)
-		if err != nil {
-			return nil, err
-		}
-		return r.generate64(n, a, b)
-	case "cap", "capitilization":
-		str, err := u.Single(cmd.Args)
-		if err != nil {
-			return nil, err
-		}
-		return r.capitilization(str)
-	default:
-		return nil, nil
+	cap := &modules.Function{
+		Name: "Capitilization",
+		Help: "Returns the given string, with letter casing randomized",
+		N:    1,
+		F: func(args []string) (any, error) {
+			str, err := u.Single(args)
+			if err != nil {
+				return nil, err
+			}
+			return capitilization(str)
+		},
 	}
-}
 
-func (*Random) Help() string {
-	return "There is no help."
+	gen := &modules.Function{
+		Name: "Generate []int64",
+		Help: "Given n, a and b, generates {[a,b)}^n",
+		N:    3,
+		F: func(args []string) (any, error) {
+			n, a, b, err := u.TripleInt64(args)
+			if err != nil {
+				return []int64{}, err
+			}
+			return generate64(n, a, b)
+		},
+	}
+
+	closed := &modules.Function{
+		Name: "Closed interval",
+		Help: "Given a and b, generates x \\in [a,b]",
+		N:    2,
+		F: func(args []string) (any, error) {
+			a, b, err := u.DoubleInt64(args)
+			if err != nil {
+				return []int64{}, err
+			}
+			return inOpen(a, b)
+		},
+	}
+
+	funcs := map[string]*modules.Function{
+		u.DEFAULT_KEY:    number,
+		"num":            number,
+		"number":         number,
+		"gen":            gen,
+		"gen64":          gen,
+		"generate64":     gen,
+		"cap":            cap,
+		"capitilization": cap,
+		"closed":         closed,
+	}
+
+	Random.Funcs = funcs
 }
 
 // Returns the given string, with letter casing randomized
-func (*Random) capitilization(str string) (string, error) {
+func capitilization(str string) (string, error) {
 	B := []byte(str)
 	B_ := make([]byte, len(B))
 
@@ -73,7 +101,7 @@ func (*Random) capitilization(str string) (string, error) {
 }
 
 // Returns the most random number, sometimes
-func (*Random) number() int64 {
+func number() int64 {
 	x := rand.Uint64()
 	var rem, xor uint64 = x, 0
 	for i := 0; i < 64; i++ {
@@ -81,19 +109,19 @@ func (*Random) number() int64 {
 		rem >>= 1
 	}
 	if xor == 1 {
-		return int64(x)
+		return int64((x << 1) >> 1)
 	}
 
 	return 17
 }
 
 // Given n, a and b, generates {[a,b)}^n
-func (*Random) generate64(n, a, b int64) ([]int64, error) {
+func generate64(n, a, b int64) ([]int64, error) {
 	return _generate64(n, a, b)
 }
 
 // Given a and b, returns random number \in [a,b)
-func (*Random) inOpen(a, b int64) (int64, error) {
+func inOpen(a, b int64) (int64, error) {
 	if err := _verify(a, b); err != nil {
 		return -1, err
 	}
@@ -102,7 +130,7 @@ func (*Random) inOpen(a, b int64) (int64, error) {
 }
 
 // Given a and b, returns random number \in [a,b]
-func (*Random) inClosed(a, b int64) (int64, error) {
+func inClosed(a, b int64) (int64, error) {
 	b += 1
 	if err := _verify(a, b); err != nil {
 		return -1, err
@@ -112,6 +140,6 @@ func (*Random) inClosed(a, b int64) (int64, error) {
 }
 
 // Return number in [1,a]
-func (r *Random) d(a int64) (int64, error) {
-	return r.inClosed(1, a)
+func d(a int64) (int64, error) {
+	return inClosed(1, a)
 }

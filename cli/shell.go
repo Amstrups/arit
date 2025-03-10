@@ -22,6 +22,7 @@ func shell(ste *State) error {
 		if input == "exit" {
 			return nil
 		}
-		fmt.Println(input)
+
+		ste.ParseRaw(input)
 	}
 }

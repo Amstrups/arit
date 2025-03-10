@@ -1,16 +1,22 @@
 package cli
 
 import (
-	"arit/cli/parser"
 	"arit/modules"
 	"fmt"
+	"strings"
 )
 
 type IDENT string
 
 type State struct {
-	Vars map[IDENT]any
-	modules.Module
+	Vars    map[IDENT]any
+	Modules map[string]*modules.Submodule
+}
+
+func (s *State) EchoStored(width int) {
+	for k := range s.Vars {
+		fmt.Println(s.ToString(k, width))
+	}
 }
 
 func (s *State) ToString(ident IDENT, w int) string {
@@ -23,40 +29,26 @@ func (s *State) ToString(ident IDENT, w int) string {
 
 	if len(str) > w {
 		return str[:w-2] + ".."
-
 	}
 
 	return fmt.Sprintf("%s: %v", ident, x)
-	/*
-			switch xt := x.(type) {
-			case int:
-		    return fmt.Sprintf("%s: %d", xt)
-		  case []int:
-		    return
-			default
-			default:
-				return fmt.Sprintf("unknown type with value %v", xt)
-
-			}
-	*/
-
 }
 
-func (s *State) Parse(cmds []parser.Command) error {
-	if len(cmds) > 1 {
-		panic("pipe is not supported in arit yet")
+func (s *State) ParseRaw(args string) error {
+	return s.Parse(strings.Split(args, " "))
+}
+
+func (s *State) Parse(args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("cannot parse empty list of args")
 	}
 
-	cmd := cmds[0]
-
-	mod, ok := s.Submodules[cmd.Module]
-
+	sub, ok := s.Modules[args[0]]
 	if !ok {
-		fmt.Printf("Could not locate a module with name %s", cmd.Module)
-		return nil
+		return fmt.Errorf("%s: unknown command", args[0])
 	}
 
-	value, err := mod.Parse(cmd)
+	value, err := sub.Run(args[1:])
 	if err != nil {
 		return err
 	}
