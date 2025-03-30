@@ -1,7 +1,7 @@
-package cli
+package run
 
 import (
-	"arit/cli/tui"
+	"arit/run/tui"
 	"bufio"
 	"fmt"
 	"os"
@@ -180,7 +180,7 @@ func ui(state *State) error {
 	ste.Insert(tui.BG1)
 	w, h := getSize()
 	e := strings.Repeat(tui.SPACE, w)
-	for i := 0; i < h; i++ {
+	for range h {
 		ste.Insert(e)
 	}
 

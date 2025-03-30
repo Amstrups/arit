@@ -1,12 +1,12 @@
 package main
 
 import (
-	"arit/cli"
+	"arit/run"
 	"os"
 )
 
 func main() {
-	err := cli.Parse(os.Args[1:])
+	err := run.Parse(os.Args[1:])
 	if err != nil {
 		panic(err)
 	}
