@@ -22,22 +22,26 @@ type (
 )
 
 func (sub *Submodule) Run(args []string) (any, error) {
-	if len(args) == 0 {
+	try_default := func(args []string) (any, error) {
 		f, ok := sub.Funcs[util.DEFAULT_KEY]
 		if !ok {
 			return nil, fmt.Errorf("module %s does not contain default func", sub.Name)
 		}
 
-		if f.N > 0 {
-			return nil, fmt.Errorf("default module for %s require args", sub.Name)
+		if f.N != len(args) {
+			return nil, fmt.Errorf("default module for %s require %d args but got %d",
+				sub.Name, f.N, len(args))
 		}
 
 		return f.F([]string{})
 	}
+	if len(args) == 0 {
+		return try_default([]string{})
+	}
 
 	f, f_ok := sub.Funcs[args[0]]
 	if !f_ok {
-		return nil, fmt.Errorf("%s %s: unknown command", args[0], args[1])
+		return try_default(args[0:])
 	}
 
 	return f.F(args[1:])

@@ -14,6 +14,7 @@
 - Connect
     - Thinking a light style equal parts "Live Share" and "tmux"
     - "live mux" from Wish.com
+- Wordle solver
 
 ## Commands
 

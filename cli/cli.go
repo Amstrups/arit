@@ -31,13 +31,14 @@ func init() {
 }
 
 func Parse(args []string) error {
-	if len(args) == 0 {
-		return errors.New("Cannot process empty list of args")
+	ste := &State{
+		Vars:    map[string]string{},
+		Modules: AvaliableModules,
+		History: []string{},
 	}
 
-	ste := &State{
-		Vars:    map[IDENT]any{},
-		Modules: AvaliableModules,
+	if len(args) == 0 {
+		return shell(ste)
 	}
 
 	switch args[0] {
