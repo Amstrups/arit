@@ -5,3 +5,5 @@ arit
 Makefile
 
 logs/
+
+bin/ffs

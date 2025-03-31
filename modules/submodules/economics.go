@@ -43,7 +43,7 @@ func init() {
 // Return expected amount of terms until loan is payed off,
 // assuming interest are applying before payment
 func terms(principal, payment int64, interest float64) (int64, error) {
-	if interest == 0 || interest > 300 {
+	if interest == 0 || interest > 3 {
 		return 0, fmt.Errorf("not supporting interest rates of 300%%, given %f.4", interest)
 	}
 
@@ -57,6 +57,10 @@ func terms(principal, payment int64, interest float64) (int64, error) {
 
 	if principal/payment > 400 {
 		return 0, fmt.Errorf("not gonna happen")
+	}
+
+	if monthly := float64(principal) * (interest - 1); monthly > float64(payment) {
+		return 0, fmt.Errorf("interest is higher than payment: %f.4 vs %d", monthly, payment)
 	}
 
 	rem := float64(principal)

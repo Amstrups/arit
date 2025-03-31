@@ -28,7 +28,7 @@ func Parse(args []string) error {
 	ste := &State{
 		Vars:    map[string]string{},
 		Modules: AvaliableModules,
-		History: []string{},
+		History: [][]byte{},
 	}
 
 	if len(args) == 0 {

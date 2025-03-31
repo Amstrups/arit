@@ -9,7 +9,7 @@ import (
 type State struct {
 	Vars    map[string]string
 	Modules map[string]*modules.Submodule
-	History []string
+	History [][]byte
 }
 
 func (s *State) Store(args []string) error {
