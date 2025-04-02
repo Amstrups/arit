@@ -147,14 +147,14 @@ func squares() (tui.Square, tui.Square, tui.Square) {
 	topleft := tui.Square{
 		X: 2,
 		Y: 2,
-		H: h50,
+		H: h_ + 1,
 		W: w30,
 	}
 
 	topright := tui.Square{
 		X: 2,
 		Y: w30 + 4,
-		H: h50,
+		H: h_ + 1,
 		W: w_ - w30 - 1,
 	}
 
@@ -185,13 +185,13 @@ func ui(state *State) error {
 	}
 
 	// Change to squares background color and draw
-	topleft, topright, bottom := squares()
+	topleft, topright, _ := squares()
 	ste.Insert(tui.FG2)
 	ste.Insert(tui.BGDarker)
 
 	ste.DrawSquare(&topleft, "Variables")
 	ste.DrawSquare(&topright, "Shell")
-	ste.DrawSquare(&bottom, "Terminal?")
+	//ste.DrawSquare(&bottom, "Terminal?")
 
 	ste.Moveto(topright.X+topright.B, topright.Y+topright.A-1)
 	prefix := ">>>"
@@ -206,3 +206,38 @@ func ui(state *State) error {
 
 	return nil
 }
+
+func ui_setup() (*tui.State, error) {
+	os.Stdout.Write(altbuff_up())
+	ste := tui.New()
+	ste.Clear()
+
+	ste.Style = tui.Default()
+
+	// Draw global background
+	ste.Insert(tui.BG1)
+	w, h := getSize()
+	e := strings.Repeat(tui.SPACE, w)
+	for range h {
+		ste.Insert(e)
+	}
+
+	// Change to squares background color and draw
+	topleft, topright, _ := squares()
+	ste.Insert(tui.FG2)
+	ste.Insert(tui.BGDarker)
+
+	ste.DrawSquare(&topleft, "Variables")
+	ste.DrawSquare(&topright, "Shell")
+	//ste.DrawSquare(&bottom, "Terminal?")
+
+	ste.Moveto(topright.X+topright.B, topright.Y+topright.A-1)
+	prefix := ">>>"
+	ste.Insert(prefix)
+	ste.Moveto(topright.X+topright.B, topright.Y+topright.A+len(prefix))
+
+	ste.Render()
+
+	return ste, nil
+}
+

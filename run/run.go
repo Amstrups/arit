@@ -4,17 +4,19 @@ import (
 	"arit/modules"
 	"arit/modules/submodules"
 	"errors"
-	"fmt"
 )
 
 const helpMsg = "standard help message"
 
 var AvaliableModules = map[string]*modules.Submodule{}
+var Aliases = map[string]string{}
 
 func addSubmodule(sub *modules.Submodule) {
 	for _, k := range sub.Keys {
-		AvaliableModules[k] = sub
+		Aliases[k] = sub.Name
 	}
+
+	AvaliableModules[sub.Name] = sub
 }
 
 func init() {
@@ -24,20 +26,20 @@ func init() {
 }
 
 func Parse(args []string) error {
-	fmt.Println(args)
 	ste := &State{
 		Vars:    map[string]string{},
 		Modules: AvaliableModules,
+		Aliases: Aliases,
 		History: [][]byte{},
 	}
 
 	if len(args) == 0 {
-		return shell(ste, false)
+		return shell(ste)
 	}
 
 	switch args[0] {
 	case "shell", "sh":
-		return shell(ste, false)
+		return shell(ste)
 	case "ui":
 		return ui(ste)
 	case "server":

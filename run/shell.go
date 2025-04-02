@@ -2,6 +2,7 @@ package run
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"os"
 
@@ -9,52 +10,61 @@ import (
 )
 
 const (
-	PASTE_HEAD = "^[[200~"
-	PASTE_TAIL = "^[[201~"
+	PASTE_HEAD = "\033[200~"
+	PASTE_TAIL = "\033[201~"
+
+	SHELL_PREFIX = "\033[1G\033[38;2;120;166;248m>>> \033[0m"
 )
 
-func shell(ste *State, tui bool) error {
-	var before func() error = repl_pre
-	var after func(string, error) error = repl_post
-	var exit func() error = func() error { fmt.Print(" goodbye"); return nil }
+var SPACES = bytes.Repeat([]byte("        "), 16)
 
-	logger := NewLogger()
+func shell(ste *State) error {
+	//logger := NewLogger()
+	//defer logger.Close()
 
-	if tui {
-		// change pre and post
-	}
+	f := os.Stdin.Fd()
+	t_state, _ := term.MakeRaw(int(f))
+	defer term.Restore(int(f), t_state)
 
-	var f uintptr
-	var t_state *term.State
-	defer func() {
-		exit()
-		fmt.Print("\033[?2004l")
-		term.Restore(int(f), t_state)
-		logger.Close()
-	}()
-
-	f = os.Stdin.Fd()
-	//t_state, _ = term.MakeRaw(int(f))
 	scanner := bufio.NewReader(os.Stdin)
 
 	fmt.Print("\033[?2004h")
-
-	/*
-		c := make(chan os.Signal, 10)
-		signal.Notify(c, os.Interrupt)
-	*/
+	defer fmt.Print("\033[?2004l")
 
 	y := len(ste.History)
 
-	for {
-		if err := before(); err != nil {
-			return err
-		}
-		val := make([]byte, 128)
-		b := make([]byte, 7)
+	var b []byte
+	var ln, x int
 
-		var ln, x int
-		//fmt.Fprintf(os.Stderr, "Bytes: %v", b)
+	/*
+			log := func(msg string) {
+				fmt.Printf("\033[s\n\033[0G%s", msg)
+				fmt.Print("\n\033[0G")
+				before()
+				fmt.Printf("%s\033[u", ste.current)
+			}
+
+		log_line := func(msg string) {
+			fmt.Print(msg)
+			fmt.Print("\n\033[1G")
+		}
+	*/
+
+	insert := func(xs ...byte) {
+		n := ste.insert(x, ln, xs...)
+		fmt.Printf("\033[s%s\033[u\033[%dC", ste.current[x:], n)
+
+		x += n
+		ln += n
+	}
+
+	for {
+		fmt.Print(SHELL_PREFIX)
+
+		ste.current = make([]byte, 128)
+		b = make([]byte, 6)
+
+		ln, x = 0, 0
 
 	read:
 		for {
@@ -63,72 +73,86 @@ func shell(ste *State, tui bool) error {
 				return err
 			}
 
-			logger.Write([]byte("abc"))
-			logger.Write(b)
-
 			switch n {
 			case 1: // ascii
 				switch b[0] {
 				case 13: // cook on enter
-					fmt.Println("\n", string(val))
+					fmt.Print("\n\033[1G")
 					break read
 				case 127: // delete on backspace
-					if ln == 0 || x == 0 {
+					if x == 0 {
 						continue
 					}
 
-					if x < ln {
-						for i := range val[x:ln] {
-							val[x+i-1] = val[x+i]
-						}
-					}
+					ste.remove(x, ln, 1)
 
 					x--
 					ln--
 
-					val[ln] = 0
 					fmt.Print("\033[1D\033[s")
-					fmt.Printf("%v \033[u", string(val[x:]))
-				case 120: // exit on 'x'
+					fmt.Printf("%s \033[u", ste.current[x:ln])
+				case 'Q': // exit on 'Q'
 					return nil
 				default:
-					if x < ln {
-						copy(val[x+1:ln+1], val[x:ln])
-					}
-					val[x] = b[0]
-
-					fmt.Printf("\033[s%v\033[u\033[1C", string(val[x:]))
-
-					x++
-					ln++
+					insert(b[0])
 				}
+
 			case 2: // weird symbols
 				fmt.Printf("the fuck is '%s' (%d, %d)\n", b[0:1], b[0], b[1])
 				break read
+
 			case 3: // arrow keys
 				switch b[2] {
 				case 'A': // up
 					if y < len(ste.History) {
-						ste.History[y] = val[:ln]
-					}
-					if y > 0 {
-						y--
-						ln = len(ste.History[y])
-						val = make([]byte, 128)
-						copy(val[:ln], ste.History[y])
-						x = max(x, ln)
+						ste.History[y] = ste.current[:ln]
 					}
 
-					fmt.Printf("\033[s%v\033[u\033[1C", string(val))
+					if y == 0 {
+						continue
+					}
+
+					fmt.Printf("%s\033[s%s\033[u", SHELL_PREFIX, SPACES[:ln])
+
+					y--
+
+					ln = len(ste.History[y])
+					ste.current = make([]byte, 128)
+					copy(ste.current[:ln], ste.History[y])
+					x = max(x, ln)
+
+					fmt.Print(SHELL_PREFIX)
+					fmt.Printf("%s", ste.current[:ln])
+
+					if x != ln {
+						fmt.Print("\033u")
+					}
 
 				case 'B': // down
-					if y < len(ste.History) {
-						ste.History[y] = val[:ln]
-						y++
-						ln = len(ste.History[y])
-						val = make([]byte, 128)
-						copy(val[0:ln], ste.History[y])
-						x = max(x, ln)
+					if y >= len(ste.History) {
+						continue
+					}
+
+					y++
+
+					ste.current = make([]byte, 128)
+					fmt.Printf("%s\033[s%s\033[u", SHELL_PREFIX, SPACES[:ln])
+
+					if y == len(ste.History) {
+						ln = 0
+						x = 0
+						continue
+					}
+
+					fmt.Print("\033[s")
+
+					ln = len(ste.History[y])
+					copy(ste.current[:ln], ste.History[y])
+					x = max(x, ln)
+					fmt.Print(SHELL_PREFIX)
+					fmt.Printf("%s", ste.current[:ln])
+					if x != ln {
+						fmt.Print("\033u")
 					}
 
 				case 'C': // right
@@ -145,52 +169,35 @@ func shell(ste *State, tui bool) error {
 					continue
 
 				default:
-					fmt.Printf("Unknown: %d %d %d => '%s'\n", int(b[0]), int(b[1]), int(b[2]), string(b))
+					fmt.Printf("Unknown: %v => '%s'\n", b[:n], b)
 					break read
-
 				}
-			case 7: // paste brackets
+
+			case 6: // paste brackets
 				if string(b) != PASTE_HEAD {
-					return fmt.Errorf("unknown head at read: %s", string(b))
+
+					fmt.Printf("expected %v\n", []byte(PASTE_HEAD))
+					return fmt.Errorf("unknown head at read: %v", b)
 				}
-				fmt.Println()
 
+				to_read := scanner.Buffered()
+				if to_read <= 6 {
+					return fmt.Errorf("expecting paste to contain tail but buffered was %d long", to_read)
+				}
+
+				b_ := make([]byte, to_read-6)
+				insert(b_...)
 			}
 		}
 
-		fmt.Print("\033[0G")
+		//	fmt.Print("\034[1G")
 
-		ste.History = append(ste.History, val[:ln])
+		ste.History = append(ste.History, ste.current[:ln])
 		y++
-		// fmt.Printf("\"%s\"\n\033[0G", string(b))
 
-		if err := after("", nil); err != nil { //TODO: proper use of 'after'
-			return err
+		err := ste.ParseRaw(string(ste.current[:ln]))
+		if err != nil {
+			fmt.Println(err.Error())
 		}
-
-		/*
-			if input == "ls" {
-
-			}
-
-			if input == "exit" {
-				return nil
-			}
-
-			err := ste.ParseRaw(input)
-			if err != nil {
-				fmt.Println(err)
-			}
-		*/
 	}
-}
-
-func repl_pre() error {
-	fmt.Print("\033[38;2;120;166;248m>>> ")
-	fmt.Print("\033[0m")
-	return nil
-}
-
-func repl_post(val string, err error) error {
-	return nil
 }
