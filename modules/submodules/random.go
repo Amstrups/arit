@@ -9,7 +9,7 @@ import (
 
 var Random = modules.Submodule{
 	Name: "Random",
-	Keys: []string{"random", "rand", "Random"},
+	Keys: []string{"Random", "rand", "random"},
 	Help: "There is no help.",
 }
 
@@ -34,7 +34,7 @@ func init() {
 		F: func(args []string) (any, error) {
 			str, err := u.Single(args)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s::capitilization %s", Random.Name, err.Error())
 			}
 			return capitilization(str)
 		},
@@ -47,7 +47,7 @@ func init() {
 		F: func(args []string) (any, error) {
 			n, a, b, err := u.TripleInt64(args)
 			if err != nil {
-				return []int64{}, err
+				return []int64{}, fmt.Errorf("%s::generate %s", Random.Name, err.Error())
 			}
 			return generate64(n, a, b)
 		},
@@ -60,7 +60,7 @@ func init() {
 		F: func(args []string) (any, error) {
 			a, b, err := u.DoubleInt64(args)
 			if err != nil {
-				return []int64{}, err
+				return []int64{}, fmt.Errorf("%s::closed_interval %s", Random.Name, err.Error())
 			}
 			return inOpen(a, b)
 		},
@@ -104,7 +104,7 @@ func capitilization(str string) (string, error) {
 func number() int64 {
 	x := rand.Uint64()
 	var rem, xor uint64 = x, 0
-	for i := 0; i < 64; i++ {
+	for range 64 {
 		xor ^= rem & uint64(1)
 		rem >>= 1
 	}

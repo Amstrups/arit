@@ -12,7 +12,7 @@ import (
 
 var Prime = modules.Submodule{
 	Name: "Prime",
-	Keys: []string{"prime", "p", "Prime"},
+	Keys: []string{"prime", "p"},
 	Help: "There is no help.",
 }
 
@@ -24,7 +24,7 @@ func init() {
 		F: func(args []string) (any, error) {
 			n, err := u.SingleInt64(args)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s::is %s", Prime.Name, err.Error())
 			}
 			return isprime(n)
 		},
@@ -37,7 +37,7 @@ func init() {
 		F: func(args []string) (any, error) {
 			n, err := u.SingleInt64(args)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s::mersenne %s", Prime.Name, err.Error())
 			}
 			return mersenne(n)
 		},
@@ -50,7 +50,7 @@ func init() {
 		F: func(args []string) (any, error) {
 			n, err := u.SingleInt64(args)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s::factors %s", Prime.Name, err.Error())
 			}
 			return factors2(n)
 		},

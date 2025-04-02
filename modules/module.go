@@ -33,7 +33,7 @@ func (sub *Submodule) Run(args []string) (any, error) {
 				sub.Name, f.N, len(args))
 		}
 
-		return f.F([]string{})
+		return f.F(args)
 	}
 	if len(args) == 0 {
 		return try_default([]string{})
@@ -45,4 +45,14 @@ func (sub *Submodule) Run(args []string) (any, error) {
 	}
 
 	return f.F(args[1:])
+}
+
+const HELP_FORMAT = "\n\033[1G%-10s %s"
+
+var HELP_HEADER_FORMAT = "\033[1m" + HELP_FORMAT + "\033[0m"
+
+func (sub *Submodule) PrintHelp() error {
+	fmt.Printf(HELP_HEADER_FORMAT, "Function", "Description")
+	fmt.Printf(HELP_FORMAT, "Foo", "Baa")
+	return nil
 }

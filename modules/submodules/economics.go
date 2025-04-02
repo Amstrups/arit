@@ -6,11 +6,20 @@ import (
 	"fmt"
 )
 
+const (
+	INT_ITALIC   = "\033[1mint\033[0m"
+	FLOAT_ITALIC = "\033[1mfloat\033[0m"
+)
+
 var Economics = modules.Submodule{
 	Name: "Economics",
-	Keys: []string{"econ", "economics", "Random"},
+	Keys: []string{"econ", "economics"},
 	Help: "There is no help.",
 }
+
+var terms_error = fmt.Errorf(
+	"%s::terms requires [principal:%s] [payment:%s] [interest:%s]",
+	Economics.Name, INT_ITALIC, INT_ITALIC, FLOAT_ITALIC)
 
 func init() {
 	terms := &modules.Function{
@@ -18,14 +27,18 @@ func init() {
 		Help: "Returns amount of terms expected before principal is payed off",
 		N:    3,
 		F: func(args []string) (any, error) {
+			if len(args) != 3 {
+				return 0, terms_error
+			}
+
 			principal, payment, err := u.DoubleInt64(args[:2])
 			if err != nil {
-				return 0, err
+				return 0, terms_error
 			}
 
 			interest, err := u.SingleFloat64(args[2:])
 			if err != nil {
-				return 0, err
+				return 0, terms_error
 			}
 
 			return terms(principal, payment, interest)

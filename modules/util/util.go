@@ -21,7 +21,7 @@ func Trim(str string) string {
 
 func SingleInt64(args []string) (int64, error) {
 	if len(args) != 1 {
-		return -1, errors.New(" requires exactly 1 argument")
+		return -1, errors.New("requires exactly 1 argument")
 	}
 	return strconv.ParseInt(args[0], 10, 64)
 
@@ -29,7 +29,7 @@ func SingleInt64(args []string) (int64, error) {
 
 func DoubleInt64(args []string) (a, b int64, err error) {
 	if len(args) != 2 {
-		err = errors.New(" requires exactly 2 argument")
+		err = errors.New("requires exactly 2 argument")
 		return
 	}
 
@@ -47,7 +47,7 @@ func DoubleInt64(args []string) (a, b int64, err error) {
 
 func TripleInt64(args []string) (a, b, c int64, err error) {
 	if len(args) != 3 {
-		err = errors.New(" requires exactly 3 argument")
+		err = errors.New("requires exactly 3 argument")
 		return
 	}
 
@@ -79,7 +79,7 @@ func KInt64s(args []string, k int) (parsed []int64, err error) {
 
 func SingleFloat64(args []string) (float64, error) {
 	if len(args) != 1 {
-		return -1, errors.New(" requires exactly 1 argument")
+		return -1, errors.New("requires exactly 1 argument")
 	}
 	return strconv.ParseFloat(args[0], 32)
 }

@@ -14,7 +14,7 @@ import (
 
 var Interpreter = modules.Submodule{
 	Name: "Interpreter",
-	Keys: []string{"eval", "evaluate", "interpreter", "Interpreter"},
+	Keys: []string{"eval", "evaluate", "interpreter"},
 	Help: "There is no help.",
 }
 
