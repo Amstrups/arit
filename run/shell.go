@@ -26,6 +26,13 @@ func shell(ste *State) error {
 	t_state, _ := term.MakeRaw(int(f))
 	defer term.Restore(int(f), t_state)
 
+	w, h, err := term.GetSize(int(f))
+	if err != nil {
+		panic(err)
+	}
+
+	log_y := 1
+
 	scanner := bufio.NewReader(os.Stdin)
 
 	fmt.Print("\033[?2004h")
@@ -36,20 +43,6 @@ func shell(ste *State) error {
 	var b []byte
 	var ln, x int
 
-	/*
-			log := func(msg string) {
-				fmt.Printf("\033[s\n\033[0G%s", msg)
-				fmt.Print("\n\033[0G")
-				before()
-				fmt.Printf("%s\033[u", ste.current)
-			}
-
-		log_line := func(msg string) {
-			fmt.Print(msg)
-			fmt.Print("\n\033[1G")
-		}
-	*/
-
 	insert := func(xs ...byte) {
 		n := ste.insert(x, ln, xs...)
 		fmt.Printf("\033[s%s\033[u\033[%dC", ste.current[x:], n)
@@ -58,6 +51,28 @@ func shell(ste *State) error {
 		ln += n
 	}
 
+	log := func(x string) {
+		fmt.Print("\033[s") // save pos, new line, move left
+		fmt.Printf("\033[%d;%dH%-60s\n\033[60D%s", log_y, w-62, x, SPACES[:62])
+
+		fmt.Print("\033[u") // restore pos
+		log_y = max((log_y+1)%h, 1)
+	}
+
+	log_input := func(n int) {
+		str := fmt.Sprintf("\"%s\"", b)
+
+		if n == 6 {
+			str = "PASTE"
+		}
+
+		if n == 1 && b[0] == 13 {
+			str = "NEWLINE"
+		}
+		log(fmt.Sprintf("%3v=%-12s - read: %d, rem:%d", b, str, n, scanner.Buffered()))
+	}
+
+cooking:
 	for {
 		fmt.Print(SHELL_PREFIX)
 
@@ -68,14 +83,24 @@ func shell(ste *State) error {
 
 	read:
 		for {
+			b = make([]byte, 6)
 			n, err := scanner.Read(b)
 			if err != nil {
 				return err
 			}
 
+			log_input(n)
+
 			switch n {
 			case 1: // ascii
 				switch b[0] {
+				case 3: // <C-c>
+					fmt.Print("\n\033[1G")
+					continue cooking
+				case 4: // <C-d>
+					return nil
+				case 12: // ctrl-l?
+					log("down")
 				case 13: // cook on enter
 					fmt.Print("\n\033[1G")
 					break read
@@ -91,8 +116,6 @@ func shell(ste *State) error {
 
 					fmt.Print("\033[1D\033[s")
 					fmt.Printf("%s \033[u", ste.current[x:ln])
-				case 'Q': // exit on 'Q'
-					return nil
 				default:
 					insert(b[0])
 				}
@@ -175,7 +198,6 @@ func shell(ste *State) error {
 
 			case 6: // paste brackets
 				if string(b) != PASTE_HEAD {
-
 					fmt.Printf("expected %v\n", []byte(PASTE_HEAD))
 					return fmt.Errorf("unknown head at read: %v", b)
 				}
@@ -186,11 +208,15 @@ func shell(ste *State) error {
 				}
 
 				b_ := make([]byte, to_read-6)
+				scanner.Read(b_)
+				scanner.Discard(6)
 				insert(b_...)
 			}
 		}
 
-		//	fmt.Print("\034[1G")
+		if ln == 0 {
+			continue
+		}
 
 		ste.History = append(ste.History, ste.current[:ln])
 		y++
