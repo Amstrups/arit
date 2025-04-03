@@ -1,6 +1,7 @@
 package modules
 
 import (
+	"bytes"
 	"fmt"
 )
 
@@ -47,13 +48,35 @@ func (sub *Submodule) Run(args []string) (any, error) {
 	return f.F(args[1:])
 }
 
-const HELP_FORMAT = "\033[1G%-10s %s\n"
+const HELP_FORMAT = "\033[1G%-s %-s %s\n"
 
-var HELP_HEADER_FORMAT = "\033[1m" + HELP_FORMAT + "\033[0m"
+var function_bytes = []byte("Function")
+var command_bytes = []byte("Command")
+
+const column_whitespace = 3
 
 func (sub *Submodule) PrintHelp() error {
-	fmt.Printf(HELP_HEADER_FORMAT, "Function", "Description")
-	fmt.Printf(HELP_FORMAT, "Foo", "Baa")
+	n_len, c_len := len(function_bytes), len(command_bytes)
+	for k, v := range sub.Funcs {
+		n_len = max(n_len, len(v.Name))
+		c_len = max(c_len, len(k))
+	}
+
+	size := n_len + c_len + 2*column_whitespace
+	clean := bytes.Repeat([]byte(" "), size)
+	b := make([]byte, size)
+	copy(b, clean)
+	copy(b, []byte("Function"))
+	copy(b[n_len+column_whitespace:], []byte("Command"))
+	fmt.Printf("\033[1G\033[1m%s%s\033[0m\n", b, "Description")
+
+	for k, v := range sub.Funcs {
+		copy(b, clean)
+		copy(b, []byte(v.Name))
+		copy(b[n_len+column_whitespace:], []byte(k))
+		fmt.Printf("\033[1G%s", b)
+		fmt.Print(v.Help + "\n\033[1G")
+	}
 
 	return nil
 }

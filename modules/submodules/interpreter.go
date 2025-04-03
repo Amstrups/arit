@@ -2,7 +2,6 @@ package submodules
 
 import (
 	"arit/modules"
-	"arit/modules/util"
 	"fmt"
 	"strconv"
 	"strings"
@@ -28,11 +27,10 @@ func init() {
 		},
 	}
 
-	funcs := map[string]*modules.Function{
-		util.DEFAULT_KEY: eval,
-	}
+	funcs := map[string]*modules.Function{}
 
 	Interpreter.Funcs = funcs
+	Interpreter.Default = eval
 }
 
 func EvalStmt(stmt ast.Stmt) any {
