@@ -57,15 +57,13 @@ func init() {
 	}
 
 	funcs := map[string]*modules.Function{
-		u.DEFAULT_KEY: check,
-		"is":          check,
-		"full":        check,
-		"mersenne":    mersenne,
-		"factors":     factors,
-		"fac":         factors,
+		"is":       check,
+		"mersenne": mersenne,
+		"factors":  factors,
 	}
 
 	Prime.Funcs = funcs
+	Prime.Default = check
 }
 
 // Returns whether given number p is prime

@@ -46,10 +46,10 @@ func init() {
 	}
 
 	funcs := map[string]*modules.Function{
-		u.DEFAULT_KEY: terms,
-		"terms":       terms,
+		"terms": terms,
 	}
 
+	Economics.Default = terms
 	Economics.Funcs = funcs
 }
 
@@ -86,5 +86,4 @@ func terms(principal, payment int64, interest float64) (int64, error) {
 	}
 
 	return x, nil
-
 }

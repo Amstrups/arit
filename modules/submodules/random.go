@@ -67,17 +67,13 @@ func init() {
 	}
 
 	funcs := map[string]*modules.Function{
-		u.DEFAULT_KEY:    number,
-		"num":            number,
-		"number":         number,
-		"gen":            gen,
-		"gen64":          gen,
-		"generate64":     gen,
-		"cap":            cap,
-		"capitilization": cap,
-		"closed":         closed,
+		"number": number,
+		"gen64":  gen,
+		"cap":    cap,
+		"closed": closed,
 	}
 
+	Random.Default = number
 	Random.Funcs = funcs
 }
 

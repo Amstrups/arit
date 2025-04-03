@@ -6,8 +6,6 @@ import (
 	"strings"
 )
 
-const DEFAULT_KEY = "DEFAULT_KEY"
-
 func Single(args []string) (string, error) {
 	if len(args) != 1 {
 		return "", errors.New(" requires exactly 1 argument")

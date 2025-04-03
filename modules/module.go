@@ -1,7 +1,6 @@
 package modules
 
 import (
-	"arit/modules/util"
 	"fmt"
 )
 
@@ -12,6 +11,7 @@ type (
 		Name, Help string
 		Keys       []string
 		Funcs      map[string]*Function
+		Default    *Function
 	}
 
 	Function struct {
@@ -23,8 +23,8 @@ type (
 
 func (sub *Submodule) Run(args []string) (any, error) {
 	try_default := func(args []string) (any, error) {
-		f, ok := sub.Funcs[util.DEFAULT_KEY]
-		if !ok {
+		f := sub.Default
+		if f == nil {
 			return nil, fmt.Errorf("module %s does not contain default func", sub.Name)
 		}
 
@@ -47,12 +47,13 @@ func (sub *Submodule) Run(args []string) (any, error) {
 	return f.F(args[1:])
 }
 
-const HELP_FORMAT = "\n\033[1G%-10s %s"
+const HELP_FORMAT = "\033[1G%-10s %s\n"
 
 var HELP_HEADER_FORMAT = "\033[1m" + HELP_FORMAT + "\033[0m"
 
 func (sub *Submodule) PrintHelp() error {
 	fmt.Printf(HELP_HEADER_FORMAT, "Function", "Description")
 	fmt.Printf(HELP_FORMAT, "Foo", "Baa")
+
 	return nil
 }
