@@ -85,6 +85,7 @@ func listen(state *tui.State) {
 	c := make(chan os.Signal, 10)
 	signal.Notify(c, os.Interrupt)
 	signal.Notify(c, syscall.SIGWINCH) // resize signal
+	signal.Notify(c, syscall.SIGWINCH) // resize signal
 	for msg := range c {
 		switch msg {
 		case os.Interrupt:

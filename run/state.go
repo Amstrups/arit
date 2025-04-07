@@ -2,10 +2,13 @@ package run
 
 import (
 	"arit/modules"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 )
+
+type COMMAND []string
 
 const LS_FORMAT = "\033[1G%-20s %-10s %s\n"
 
@@ -17,11 +20,6 @@ type State struct {
 	Aliases map[string]string
 	History [][]byte
 	current []byte
-}
-
-func PWD() error {
-	fmt.Println(os.Getenv("PWD"))
-	return nil
 }
 
 func (s *State) PrintHelp(args []string) error {
@@ -76,14 +74,14 @@ func (s *State) Get(args []string) (string, error) {
 	return v, nil
 }
 
-func (s *State) std(args []string) (ok bool, err error) {
+func (s *State) std(args []string) (used bool, valOrErr any) {
 	if len(args) == 0 {
 		return false, fmt.Errorf("cannot parse empty list of args")
 	}
 
 	switch args[0] {
 	case "pwd":
-		return true, PWD()
+		return true, os.Getenv("PWD")
 
 	case "help":
 		return true, s.PrintHelp(args[1:])
@@ -94,7 +92,7 @@ func (s *State) std(args []string) (ok bool, err error) {
 	case "get":
 		val, err := s.Get(args[1:])
 		if err == nil {
-			fmt.Println(val)
+			return true, val
 		}
 		return true, err
 
@@ -113,42 +111,146 @@ func (s *State) std(args []string) (ok bool, err error) {
 	return false, nil
 }
 
-func (s *State) ParseRaw(args string) error {
-	return s.Parse(strings.Split(strings.Trim(args, " "), " "))
-}
+var unclosedQuoteError = errors.New("unclosed quote")
 
-func (s *State) Parse(args []string) error {
-	if len(args) == 0 {
-		return fmt.Errorf("cannot parse empty list of args")
-	}
+func parse(args string) ([][]string, error) {
+	commands := [][]string{}
+	arg := []string{}
+	val := ""
 
-	used, err := s.std(args)
-	if used {
-		return err
-	}
+	in_quote := false
+	ps := false
 
-	name, ok := s.Aliases[args[0]]
-	if !ok {
-		v, err := s.Get(args)
-		if err != nil {
-			return fmt.Errorf("%s: unknown command", args[0])
+	for _, x := range args {
+		if in_quote {
+			if x == '"' {
+				in_quote = false
+				arg = append(arg, val)
+				val = ""
+				continue
+			}
+
+			val += string(x)
+			continue
 		}
 
-		fmt.Println(v)
-		return nil
+		if x == '|' {
+			ps = true
+			continue
+		} else if x == '>' && ps {
+			_arg := make([]string, len(arg))
+			copy(_arg, arg)
+
+			commands = append(commands, _arg)
+
+			arg = []string{}
+			val = ""
+			ps = false
+
+			continue
+		}
+
+		switch x {
+		case ' ':
+			if val != "" {
+				arg = append(arg, val)
+			}
+			val = ""
+			continue
+		case '"':
+			in_quote = true
+		default:
+			val += string(x)
+		}
+
+	}
+	if in_quote {
+		return commands, unclosedQuoteError
+
 	}
 
-	sub, ok := s.Modules[name]
-	if !ok {
-		panic(fmt.Sprintf("alias %s does not point to moduel", name))
+	if val != "" {
+		arg = append(arg, val)
+	}
+	commands = append(commands, arg)
+
+	return commands, nil
+}
+
+func (s *State) ParseRaw(args string) error {
+	commands, err := parse(args)
+
+	var msg string = "args: "
+
+	for _, e := range commands {
+		msg += fmt.Sprintf("%v", e)
 	}
 
-	value, err := sub.Run(args[1:])
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(value)
+	return errors.Join(s.Parse(commands...), errors.New(msg))
+}
+
+func (s *State) Parse(commands ...[]string) error {
+	var piped []any
+	for _, args := range commands {
+		if len(piped) > 0 {
+			str_piped := make([]string, len(piped))
+			for i, p := range piped {
+				str_piped[i] = fmt.Sprintf("%v", p)
+			}
+			args = append(args, str_piped...)
+		}
+
+		if len(args) == 0 {
+			return fmt.Errorf("cannot parse empty list of args")
+		}
+
+		if used, valOrErr := s.std(args); used {
+			switch t := valOrErr.(type) {
+			case error:
+				return t
+			case []any:
+				piped = t
+			default:
+				piped = []any{t}
+			}
+			continue
+		}
+
+		name, ok := s.Aliases[args[0]]
+		if !ok {
+			v, err := s.Get(args)
+			if err != nil {
+				return fmt.Errorf("%s: unknown command", args[0])
+			}
+
+			piped = []any{v}
+			continue
+		}
+
+		sub, ok := s.Modules[name]
+		if !ok {
+			panic(fmt.Sprintf("alias %s does not point to moduel", name))
+		}
+
+		value, err := sub.Run(args[1:])
+		if err != nil {
+			return err
+		}
+
+		if piped, ok = value.([]any); !ok {
+			piped = []any{value}
+		}
+	}
+
+	for _, v := range piped {
+		if v != nil {
+			fmt.Printf("\033[1G%v\n", v)
+		}
+	}
 
 	return nil
 }

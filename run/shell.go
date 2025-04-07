@@ -76,6 +76,8 @@ func shell(ste *State, dimx, dimy int) error {
 				log_y--
 			case 27:
 				str = "ESCAPE"
+			case 127:
+				str = "BACKSPACE"
 			}
 		}
 
@@ -83,6 +85,15 @@ func shell(ste *State, dimx, dimy int) error {
 	}
 	newline := func() {
 		fmt.Printf("\n\033[%dG", dimx)
+	}
+
+	test_input := func(input string) {
+		ste.current = []byte(input)
+		ln = len(ste.current)
+		fmt.Print("\033[1G")
+		fmt.Print(SHELL_PREFIX)
+		fmt.Printf("[RUNNING_TEST_INPUT] %s", ste.current)
+		newline()
 	}
 
 cooking:
@@ -112,12 +123,27 @@ cooking:
 					continue cooking
 				case 4: // <C-d>, kill process
 					return nil
+
+				case 20: // <C-t>, easy-access test
+					test_input("random number |> store x")
+					break read
+
+				case 21: // <C-u>, easy-access test2
+					test_input("rand cap \"hello world\"")
+					break read
+
+				case 25: // <C-y>, easy-access test3
+					test_input("rand closed 1 10 |> store y")
+					break read
+
 				case 12: // <C-l>
 				case 27: // ESC
 					continue
+
 				case 13: // cook on enter
 					newline()
 					break read
+
 				case 127: // delete on backspace
 					if x == 0 {
 						continue
@@ -238,7 +264,7 @@ cooking:
 
 		err := ste.ParseRaw(string(ste.current[:ln]))
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Printf("\033[1G%s\n", err.Error())
 		}
 	}
 }
