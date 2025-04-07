@@ -34,12 +34,12 @@ func Parse(args []string) error {
 	}
 
 	if len(args) == 0 {
-		return shell(ste)
+		return shell(ste, 1, 1)
 	}
 
 	switch args[0] {
 	case "shell", "sh":
-		return shell(ste)
+		return shell(ste, 1, 1)
 	case "ui":
 		return ui(ste)
 	case "server":

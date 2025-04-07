@@ -101,7 +101,7 @@ func listen(state *tui.State) {
 	}
 }
 
-func read(state *tui.State) {
+func read(ui *tui.State, state *State) {
 	file, err := os.Create("logs/log.txt")
 	if err != nil {
 		fmt.Println(err)
@@ -109,14 +109,14 @@ func read(state *tui.State) {
 	}
 
 	handle := func(string) {
-		state.Newline(state.Y - 4)
-		state.Insert("\033[3m")
-		state.Insert("true")
-		state.Newline(state.Y)
-		state.Insert("\033[23m")
-		state.Insert(">>> ")
-		state.Moveto(state.X, state.Y+4)
-		state.Render()
+		ui.Newline(ui.Y - 4)
+		ui.Insert("\033[3m")
+		ui.Insert("true")
+		ui.Newline(ui.Y)
+		ui.Insert("\033[23m")
+		ui.Insert(">>> ")
+		ui.Moveto(ui.X, ui.Y+4)
+		ui.Render()
 
 	}
 
@@ -127,6 +127,7 @@ func read(state *tui.State) {
 		scanner.Scan()
 
 		input := scanner.Text()
+		state.ParseRaw(input)
 		handle(input)
 		file.WriteString(input + "\n")
 	}
@@ -202,7 +203,7 @@ func ui(state *State) error {
 
 	go listen(ste)
 
-	read(ste)
+	read(ste, state)
 
 	return nil
 }
@@ -240,4 +241,3 @@ func ui_setup() (*tui.State, error) {
 
 	return ste, nil
 }
-

@@ -18,7 +18,7 @@ const (
 
 var SPACES = bytes.Repeat([]byte("        "), 16)
 
-func shell(ste *State) error {
+func shell(ste *State, dimx, dimy int) error {
 	//logger := NewLogger()
 	//defer logger.Close()
 
@@ -60,16 +60,29 @@ func shell(ste *State) error {
 	}
 
 	log_input := func(n int) {
-		str := fmt.Sprintf("\"%s\"", b)
+		str := fmt.Sprintf("\"%s\"", b[:n])
 
 		if n == 6 {
 			str = "PASTE"
 		}
 
-		if n == 1 && b[0] == 13 {
-			str = "NEWLINE"
+		if n == 1 {
+			switch b[0] {
+			case 3:
+				str = "INTERRUPT"
+				log_y--
+			case 13:
+				str = "NEWLINE"
+				log_y--
+			case 27:
+				str = "ESCAPE"
+			}
 		}
-		log(fmt.Sprintf("%3v=%-12s - read: %d, rem:%d", b, str, n, scanner.Buffered()))
+
+		log(fmt.Sprintf("%3v= %-10s - read: %d, rem:%d", b, str, n, scanner.Buffered()))
+	}
+	newline := func() {
+		fmt.Printf("\n\033[%dG", dimx)
 	}
 
 cooking:
@@ -95,14 +108,15 @@ cooking:
 			case 1: // ascii
 				switch b[0] {
 				case 3: // <C-c>
-					fmt.Print("\n\033[1G")
+					newline()
 					continue cooking
-				case 4: // <C-d>
+				case 4: // <C-d>, kill process
 					return nil
-				case 12: // ctrl-l?
-					log("down")
+				case 12: // <C-l>
+				case 27: // ESC
+					continue
 				case 13: // cook on enter
-					fmt.Print("\n\033[1G")
+					newline()
 					break read
 				case 127: // delete on backspace
 					if x == 0 {
@@ -116,6 +130,7 @@ cooking:
 
 					fmt.Print("\033[1D\033[s")
 					fmt.Printf("%s \033[u", ste.current[x:ln])
+
 				default:
 					insert(b[0])
 				}
