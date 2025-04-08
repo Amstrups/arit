@@ -2,113 +2,153 @@ package run
 
 import (
 	"arit/modules"
+	"arit/run/cursor"
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 )
 
-type COMMAND []string
+type (
+	StdFunction struct {
+		key  string
+		help string
+		f    func(*State, ...string) (any, error)
+	}
 
-const LS_FORMAT = "\033[1G%-20s %-10s %s\n"
+	State struct {
+		Vars    map[string]string
+		Modules map[string]*modules.Submodule
+		Aliases map[string]string
+		History [][]byte
+		current []byte
+		*cursor.Cursor
+	}
+)
 
-var LS_HEADER_FORMAT = "\033[1m" + LS_FORMAT + "\033[0m"
+var std map[string]*StdFunction
 
-type State struct {
-	Vars    map[string]string
-	Modules map[string]*modules.Submodule
-	Aliases map[string]string
-	History [][]byte
-	current []byte
+const stdModuleName = "Std"
+
+func init() {
+	get := &StdFunction{
+		key:  "get",
+		help: "Retrieve value(s) from storage",
+		f: func(ste *State, args ...string) (any, error) {
+			return ste.Get(args)
+		},
+	}
+
+	set := &StdFunction{
+		key:  "set",
+		help: "Add value(s) to storage",
+		f: func(ste *State, args ...string) (any, error) {
+			return nil, ste.Store(args)
+		},
+	}
+
+	export := &StdFunction{
+		key:  "export",
+		help: "Prints all values in storage",
+		f: func(ste *State, args ...string) (any, error) {
+			for k, v := range ste.Vars {
+				fmt.Printf("%s=%s\n", k, v)
+			}
+			return nil, nil
+		},
+	}
+
+	helpCmd := &StdFunction{
+		key:  "help",
+		help: "Prints this",
+		f: func(ste *State, args ...string) (any, error) {
+			return nil, ste.PrintHelp(args)
+		},
+	}
+
+	pwd := &StdFunction{
+		key:  "pwd",
+		help: "Get current working directory",
+		f: func(*State, ...string) (any, error) {
+			return os.Getenv("PWD"), nil
+		},
+	}
+
+	std = map[string]*StdFunction{
+		helpCmd.key: helpCmd,
+		set.key:     set,
+		get.key:     get,
+		export.key:  export,
+		pwd.key:     pwd,
+	}
 }
+
+func (s *State) getSubmodule(arg string) (*modules.Submodule, error) {
+	name, ok := s.Aliases[arg]
+	if !ok {
+		return nil, fmt.Errorf("help %s: unknown command", arg)
+	}
+
+	sub, ok := s.Modules[name]
+	if !ok {
+		return nil, fmt.Errorf("help %s: unknown command", arg)
+	}
+
+	return sub, nil
+}
+
+const column_whitespace = 3
 
 func (s *State) PrintHelp(args []string) error {
 	if len(args) > 1 {
-		return fmt.Errorf("help command accepts 1 argument")
+		return fmt.Errorf("help command accepts {0,1} argument(s)")
 	}
 
-	if len(args) == 0 {
-		fmt.Printf(LS_HEADER_FORMAT, "Commands", "Module", "Help/description")
-		fmt.Printf(LS_FORMAT, "store/set", "Std", "Add value to storage")
-		fmt.Printf(LS_FORMAT, "get", "Std", "Retrieves values from storage")
-		fmt.Printf(LS_FORMAT, "export", "Std", "Prints all values in storage")
+	if len(args) == 0 { // TODO: Fix help menu for std
+		s.InsertAtNewline2(cursor.F_MODULE_HELP_HEADER, "Commands", "Module", "Help/description")
+
+		for _, f := range std {
+			s.InsertAtNewline2(cursor.F_MODULE_HELP, f.key, stdModuleName, f.help)
+		}
+
 		for _, sub := range s.Modules {
-			fmt.Printf(LS_FORMAT, strings.Join(sub.Keys, "/"), sub.Name, sub.Help)
+			s.InsertAtNewline2(cursor.F_MODULE_HELP, strings.Join(sub.Keys, "/"), sub.Name, sub.Help)
 		}
+
+		s.Render()
 		return nil
 	}
 
-	name, ok := s.Aliases[args[0]]
-	if !ok {
-		return fmt.Errorf("help %s: unknown command", args[0])
+	sub, err := s.getSubmodule(args[0])
+	if err != nil {
+		return err
 	}
 
-	return s.Modules[name].PrintHelp()
-}
+	var n_len, c_len = cursor.FUNCTION_BYTES_LEN, cursor.COMMAND_BYTES_LEN
 
-func (s *State) Store(args []string) error {
-	switch len(args) {
-	case 0, 1:
-		return fmt.Errorf("store command expect ident and value args")
-	case 2:
-		s.Vars[args[0]] = args[1]
-		return nil
-	default:
-		return fmt.Errorf("unknown args passed to get command: %v", args)
-	}
-}
-
-func (s *State) Get(args []string) (string, error) {
-	if len(args) > 1 {
-		return "", fmt.Errorf("get: unknown args passed to command: %v", args)
+	for k, v := range sub.Funcs {
+		n_len = max(n_len, len(v.Name))
+		c_len = max(c_len, len(k))
 	}
 
-	if len(args) == 0 {
-		return "", fmt.Errorf("get: expected 1 argument, got 0")
+	size := n_len + c_len + 2*column_whitespace
+	clean := bytes.Repeat([]byte(" "), size)
+	b := make([]byte, size)
+	copy(b, clean)
+	copy(b, []byte("Function"))
+	copy(b[n_len+column_whitespace:], []byte("Command"))
+	fmt.Printf("\033[1G\033[1m%s%s\033[0m\n", b, "Description")
+
+	for k, v := range sub.Funcs {
+		copy(b, clean)
+		copy(b, []byte(v.Name))
+		copy(b[n_len+column_whitespace:], []byte(k))
+		fmt.Printf("\033[1G%s", b)
+		fmt.Print(v.Help + "\n\033[1G")
 	}
 
-	v, ok := s.Vars[args[0]]
-	if !ok {
-		return "", fmt.Errorf("get: unknown var %s", args[0])
-	}
-	return v, nil
-}
-
-func (s *State) std(args []string) (used bool, valOrErr any) {
-	if len(args) == 0 {
-		return false, fmt.Errorf("cannot parse empty list of args")
-	}
-
-	switch args[0] {
-	case "pwd":
-		return true, os.Getenv("PWD")
-
-	case "help":
-		return true, s.PrintHelp(args[1:])
-
-	case "store", "set":
-		return true, s.Store(args[1:])
-
-	case "get":
-		val, err := s.Get(args[1:])
-		if err == nil {
-			return true, val
-		}
-		return true, err
-
-	case "export":
-		if args[0] == "export" {
-			for k, v := range s.Vars {
-				fmt.Printf("%s=%s\n", k, v)
-			}
-			return true, nil
-		}
-
-	default:
-		return false, nil
-	}
-
-	return false, nil
+	return nil
 }
 
 var unclosedQuoteError = errors.New("unclosed quote")
@@ -151,7 +191,7 @@ func parse(args string) ([][]string, error) {
 		}
 
 		switch x {
-		case ' ':
+		case cursor.SPACE:
 			if val != "" {
 				arg = append(arg, val)
 			}
@@ -190,7 +230,7 @@ func (s *State) ParseRaw(args string) error {
 		return err
 	}
 
-	return errors.Join(s.Parse(commands...), errors.New(msg))
+	return JoinErrors(s.Parse(commands...), errors.New(msg))
 }
 
 func (s *State) Parse(commands ...[]string) error {
@@ -208,8 +248,15 @@ func (s *State) Parse(commands ...[]string) error {
 			return fmt.Errorf("cannot parse empty list of args")
 		}
 
-		if used, valOrErr := s.std(args); used {
-			switch t := valOrErr.(type) {
+		// check for std lib
+		stdFunc, ok := std[args[0]]
+		if ok {
+			val, err := stdFunc.f(s, args[1:]...)
+			if err != nil {
+				return err
+			}
+
+			switch t := val.(type) {
 			case error:
 				return t
 			case []any:
@@ -220,6 +267,7 @@ func (s *State) Parse(commands ...[]string) error {
 			continue
 		}
 
+		// check for modules
 		name, ok := s.Aliases[args[0]]
 		if !ok {
 			v, err := s.Get(args)
@@ -248,32 +296,11 @@ func (s *State) Parse(commands ...[]string) error {
 
 	for _, v := range piped {
 		if v != nil {
-			fmt.Printf("\033[1G%v\n", v)
+			s.InsertAnyAtNewline(v)
 		}
 	}
 
 	return nil
-}
-
-func (s *State) EchoStored(width int) {
-	for k := range s.Vars {
-		fmt.Println(s.ToString(k, width))
-	}
-}
-
-func (s *State) ToString(ident string, w int) string {
-	x, ok := s.Vars[ident]
-	if !ok {
-		panic(fmt.Errorf("trying to access unknown var %s in state", ident))
-	}
-
-	str := fmt.Sprintf("%s: %v", ident, x)
-
-	if len(str) > w {
-		return str[:w-2] + ".."
-	}
-
-	return fmt.Sprintf("%s: %v", ident, x)
 }
 
 func (s *State) insert(x, ln int, bytes ...byte) (n int) {

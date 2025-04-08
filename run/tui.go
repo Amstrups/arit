@@ -14,15 +14,13 @@ import (
 	"golang.org/x/term"
 )
 
-// returns (width,height)
-func getSize() (int, int) {
-
-	w, h, err := term.GetSize(int(os.Stdout.Fd()))
+func getSize() (width, height int) {
+	width, height, err := term.GetSize(int(os.Stdout.Fd()))
 	if err != nil {
 		panic(err)
 	}
 
-	return w, h
+	return
 }
 
 func draw(ste *tui.State) (tui.Square, tui.Square) {

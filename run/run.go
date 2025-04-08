@@ -3,6 +3,7 @@ package run
 import (
 	"arit/modules"
 	"arit/modules/submodules"
+	"arit/run/cursor"
 	"errors"
 )
 
@@ -26,11 +27,13 @@ func init() {
 }
 
 func Parse(args []string) error {
+	w, h := getSize()
 	ste := &State{
 		Vars:    map[string]string{},
 		Modules: AvaliableModules,
 		Aliases: Aliases,
 		History: [][]byte{},
+		Cursor:  cursor.New(1, 1, w, h, SHELL_PREFIX),
 	}
 
 	if len(args) == 0 {

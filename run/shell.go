@@ -1,6 +1,7 @@
 package run
 
 import (
+	"arit/run/cursor"
 	"bufio"
 	"bytes"
 	"fmt"
@@ -10,9 +11,6 @@ import (
 )
 
 const (
-	PASTE_HEAD = "\033[200~"
-	PASTE_TAIL = "\033[201~"
-
 	SHELL_PREFIX = "\033[1G\033[38;2;120;166;248m>>> \033[0m"
 )
 
@@ -60,7 +58,7 @@ func shell(ste *State, dimx, dimy int) error {
 	}
 
 	log_input := func(n int) {
-		str := fmt.Sprintf("\"%s\"", b[:n])
+		str := fmt.Sprintf("%q", b[:n])
 
 		if n == 6 {
 			str = "PASTE"
@@ -68,16 +66,18 @@ func shell(ste *State, dimx, dimy int) error {
 
 		if n == 1 {
 			switch b[0] {
-			case 3:
+			case cursor.CtrlL:
+				str = "FORM FEED"
+			case cursor.CtrlC:
 				str = "INTERRUPT"
-				log_y--
-			case 13:
+			case cursor.CR:
 				str = "NEWLINE"
-				log_y--
-			case 27:
+			case cursor.ESC:
 				str = "ESCAPE"
-			case 127:
+			case cursor.BACKSPACE:
 				str = "BACKSPACE"
+			case cursor.SPACE:
+				str = "SPACE"
 			}
 		}
 
@@ -118,33 +118,33 @@ cooking:
 			switch n {
 			case 1: // ascii
 				switch b[0] {
-				case 3: // <C-c>
+				case cursor.CtrlC: // <C-c>
 					newline()
 					continue cooking
-				case 4: // <C-d>, kill process
+				case cursor.CtrlD: // <C-d>, kill process
 					return nil
 
-				case 20: // <C-t>, easy-access test
+				case cursor.CtrlT: // <C-t>, easy-access test
 					test_input("random number |> store x")
 					break read
 
-				case 21: // <C-u>, easy-access test2
+				case cursor.CtrlU: // <C-u>, easy-access test2
 					test_input("rand cap \"hello world\"")
 					break read
 
-				case 25: // <C-y>, easy-access test3
+				case cursor.CtrlY: // <C-y>, easy-access test3
 					test_input("rand closed 1 10 |> store y")
 					break read
 
-				case 12: // <C-l>
-				case 27: // ESC
+				case cursor.CtrlL: // <C-l>
+				case cursor.ESC: // ESC
 					continue
 
-				case 13: // cook on enter
+				case cursor.CR: // cook on enter
 					newline()
 					break read
 
-				case 127: // delete on backspace
+				case cursor.BACKSPACE: // delete on backspace
 					if x == 0 {
 						continue
 					}
@@ -154,8 +154,12 @@ cooking:
 					x--
 					ln--
 
-					fmt.Print("\033[1D\033[s")
-					fmt.Printf("%s \033[u", ste.current[x:ln])
+					ste.Moveleft()
+					ste.Save()
+					ste.Insert(string(ste.current[x:ln]))
+					ste.Space()
+					ste.Restore()
+					ste.Render()
 
 				default:
 					insert(b[0])
@@ -223,12 +227,13 @@ cooking:
 					if x < ln {
 						x++
 						fmt.Print("\033[1C")
+						ste.Cursor.Moveright()
 					}
 
 				case 'D': //left
 					if x > 0 {
 						x--
-						fmt.Print("\033[1D")
+						ste.Cursor.Moveleft()
 					}
 					continue
 
@@ -238,8 +243,8 @@ cooking:
 				}
 
 			case 6: // paste brackets
-				if string(b) != PASTE_HEAD {
-					fmt.Printf("expected %v\n", []byte(PASTE_HEAD))
+				if string(b) != cursor.PASTE_WRAPPER_HEAD {
+					fmt.Printf("expected %v\n", []byte(cursor.PASTE_WRAPPER_HEAD))
 					return fmt.Errorf("unknown head at read: %v", b)
 				}
 
@@ -264,7 +269,17 @@ cooking:
 
 		err := ste.ParseRaw(string(ste.current[:ln]))
 		if err != nil {
-			fmt.Printf("\033[1G%s\n", err.Error())
+			switch err2 := err.(type) {
+			case joinedError:
+				for _, e := range err2.errors {
+					ste.InsertAtNewline(e.Error())
+				}
+
+			default:
+				ste.InsertAtNewline(err.Error())
+			}
+
+			ste.Render()
 		}
 	}
 }
