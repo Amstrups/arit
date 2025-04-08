@@ -279,7 +279,7 @@ cooking:
 				ste.InsertAtNewline(err.Error())
 			}
 
-			ste.Render()
 		}
+		ste.Render()
 	}
 }

@@ -75,12 +75,22 @@ func init() {
 		},
 	}
 
+	moon := &StdFunction{
+		key:  "moon",
+		help: "Moon",
+		f: func(*State, ...string) (any, error) {
+			moon, err := os.ReadFile("bin/moon")
+			return string(moon), err
+		},
+	}
+
 	std = map[string]*StdFunction{
 		helpCmd.key: helpCmd,
 		set.key:     set,
 		get.key:     get,
 		export.key:  export,
 		pwd.key:     pwd,
+		moon.key:    moon,
 	}
 }
 
@@ -292,6 +302,7 @@ func (s *State) Parse(commands ...[]string) error {
 		if piped, ok = value.([]any); !ok {
 			piped = []any{value}
 		}
+		value = piped
 	}
 
 	for _, v := range piped {

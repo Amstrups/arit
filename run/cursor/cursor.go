@@ -2,7 +2,6 @@ package cursor
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"os"
 )
@@ -29,8 +28,7 @@ type Cursor struct {
 
 func New(x, y, w, h int, prefix string) *Cursor {
 	state := &Cursor{
-		screen: bufio.NewWriter(&bytes.Buffer{}),
-		buffer: bufio.NewWriter(os.Stdout),
+		screen: bufio.NewWriter(os.Stdout),
 	}
 	return state
 }
@@ -98,8 +96,8 @@ func (s *Cursor) Newline() {
 }
 
 func (s *Cursor) Render() {
-	fmt.Fprintf(s.buffer, "%#v", s.screen)
-	s.buffer.Flush()
+	//fmt.Fprintf(s.buffer, "%#v", s.screen.)
+	s.screen.Flush()
 }
 
 func (s *Cursor) Save() {
