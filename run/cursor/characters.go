@@ -1,10 +1,11 @@
 package cursor
 
+import "strings"
+
 type CHAR string
 
 /*
-Constants named 'F_*'
-
+	Constants named 'F_*' contain formatting symbols
 */
 
 // Ansi, often used
@@ -18,39 +19,31 @@ const (
 	SAVE    = "\033[s"
 	RESTORE = "\033[u"
 
+	CLEAR_RIGHT = "\033[0K"
+	CLEAR_LEFT  = "\033[1K"
+	CLEAR_ALL   = "\033[2K"
+
 	F_RGB_BG = "\033[48;2;%d;%d;%dm"
 	F_RGB_FG = "\033[38;2;%d;%d;%dm"
 
 	F_POSITION = "\033[%d;%dH" // vertical, then horizontal axis
+
+	F_MOVE_RIGHT = "\033[%dC"
+	F_MOVE_LEFT  = "\033[%dD"
+
+	F_ABSOLUTE_COLUMN = "\033[%dG"
 )
 
 // Ascii ints
 const (
-	// <C-c>
-	CtrlC = 3
-
-	// <C-d>
-	CtrlD = 4
-
-	// <C-l>
-	CtrlL = 12
-
-	// Enter/carriage return
-	CR = 13
-
-	// <C-t>
-	CtrlT = 20
-
-	// <C-u>
-	CtrlU = 21
-
-	// <C-y>
-	CtrlY = 25
-
-	// <ESC>
-	ESC = 27
-
-	// BACKSPACE
+	CtrlC     = 3
+	CtrlD     = 4
+	CtrlL     = 12
+	CR        = 13
+	CtrlT     = 20
+	CtrlU     = 21
+	CtrlY     = 25
+	ESC       = 27
 	BACKSPACE = 127
 )
 
@@ -62,6 +55,10 @@ const (
 const (
 	SPACE     = ' ' // it's just space
 	STR_SPACE = string(SPACE)
+)
+
+var (
+	SPACES = strings.Repeat(STR_SPACE, 8*16)
 )
 
 const (
@@ -103,6 +100,8 @@ const (
 
 // Preset formats and consts
 const (
+	F_SHELL_PREFIX = "\033[1G\033[38;2;120;166;248m%s\033[0m"
+
 	F_MODULE_HELP        = "%-20s %-10s %s"
 	F_MODULE_HELP_HEADER = "\033[1m" + F_MODULE_HELP + "\033[0m"
 
