@@ -24,6 +24,7 @@ type (
 		History [][]byte
 		current []byte
 		*cursor.Cursor
+		log *logger
 	}
 )
 
@@ -53,8 +54,10 @@ func init() {
 		help: "Prints all values in storage",
 		f: func(ste *State, args ...string) (any, error) {
 			for k, v := range ste.Vars {
-				fmt.Printf("%s=%s\n", k, v)
+				ste.Insertf("%s=%s", k, v)
+				ste.Newline()
 			}
+			ste.Render()
 			return nil, nil
 		},
 	}
@@ -108,22 +111,20 @@ func (s *State) getSubmodule(arg string) (*modules.Submodule, error) {
 	return sub, nil
 }
 
-const column_whitespace = 3
-
 func (s *State) PrintHelp(args []string) error {
 	if len(args) > 1 {
 		return fmt.Errorf("help command accepts {0,1} argument(s)")
 	}
 
 	if len(args) == 0 { // TODO: Fix help menu for std
-		s.InsertAtNewline2(cursor.F_MODULE_HELP_HEADER, "Commands", "Module", "Help/description")
+		s.InsertAtNewlinef(cursor.F_MODULE_HELP_HEADER, "Commands", "Module", "Help/description")
 
 		for _, f := range std {
-			s.InsertAtNewline2(cursor.F_MODULE_HELP, f.key, stdModuleName, f.help)
+			s.InsertAtNewlinef(cursor.F_MODULE_HELP, f.key, stdModuleName, f.help)
 		}
 
 		for _, sub := range s.Modules {
-			s.InsertAtNewline2(cursor.F_MODULE_HELP, strings.Join(sub.Keys, "/"), sub.Name, sub.Help)
+			s.InsertAtNewlinef(cursor.F_MODULE_HELP, strings.Join(sub.Keys, "/"), sub.Name, sub.Help)
 		}
 
 		s.Render()
@@ -135,6 +136,7 @@ func (s *State) PrintHelp(args []string) error {
 		return err
 	}
 
+	const column_whitespace = 3
 	var n_len, c_len = cursor.FUNCTION_BYTES_LEN, cursor.COMMAND_BYTES_LEN
 
 	for k, v := range sub.Funcs {
@@ -146,8 +148,8 @@ func (s *State) PrintHelp(args []string) error {
 	clean := bytes.Repeat([]byte(" "), size)
 	b := make([]byte, size)
 	copy(b, clean)
-	copy(b, []byte("Function"))
-	copy(b[n_len+column_whitespace:], []byte("Command"))
+	copy(b, cursor.FUNCTION_BYTES)
+	copy(b[n_len+column_whitespace:], cursor.COMMAND_BYTES)
 	fmt.Printf("\033[1G\033[1m%s%s\033[0m\n", b, "Description")
 
 	for k, v := range sub.Funcs {

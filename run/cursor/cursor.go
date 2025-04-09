@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 )
 
 /*
@@ -23,28 +24,51 @@ type Cursor struct {
 	// Style // TODO: combine tui and shell cursor logic
 
 	Prefix string
+	stx    int
+
+	lines  int
 	offset int
+	mode   int // 0: print, 1: input
+
 }
 
-func New(x, y, w, h int, prefix string) *Cursor {
+var l *bufio.Writer
+
+func New(x, y, w, h int, f_prefix, prefix string) *Cursor {
+	log_file, err := os.Create("logs/log")
+	if err != nil {
+		panic(err)
+	}
+
+	prefixln := len(prefix)
+
 	state := &Cursor{
 		screen: bufio.NewWriter(os.Stdout),
+		x:      x,
+		y:      y,
+		w:      w,
+		Prefix: fmt.Sprintf(f_prefix, prefix),
+		stx:    x + prefixln,
+		offset: prefixln,
+		buffer: bufio.NewWriter(log_file),
 	}
 	return state
 }
 
 func (s *Cursor) Focus() {
-	fmt.Fprintf(s.screen, F_POSITION, s.x+s.X, s.y+s.Y)
+	fmt.Fprintf(s.screen, F_POSITION, s.stx+s.X, s.y+s.Y)
 }
 
-func (s *Cursor) Set(x, y int) {
-	s.X = x
-	s.Y = y
+func (c *Cursor) ResetLine() {
+	fmt.Fprint(c.screen, CLEAR_LEFT)
+	c.Pprefix()
 }
 
-func (s *Cursor) Moveto(x int, y int) {
-	s.Set(x, y)
-	fmt.Fprintf(s.screen, "\033[%d;%dH", x, y)
+func (c *Cursor) Pprefix() {
+	fmt.Fprintf(c.screen, F_ABSOLUTE_COLUMN, c.x)
+	fmt.Fprint(c.screen, c.Prefix)
+	c.mode = 1
+	c.lines = 0
 }
 
 func (s *Cursor) Moveright() {
@@ -52,47 +76,69 @@ func (s *Cursor) Moveright() {
 	s.Y = min(s.Y+1, s.w)
 }
 
+func (s *Cursor) RelativeColumn(n int) {
+	fmt.Fprintf(s.screen, F_ABSOLUTE_COLUMN, s.stx+n)
+}
+
 func (s *Cursor) Moveleft() {
 	fmt.Fprint(s.screen, "\033[1D")
 	s.Y = max(1, s.Y-1)
 }
 
-func (s *Cursor) Clear() {
-	s.Set(1, 1)
-	fmt.Fprint(s.screen, "\033[2J")
-	fmt.Fprint(s.screen, "\033[0;0H")
+func (s *Cursor) Insert(str string) {
+	a, b := 0, len(str)
+
+	offset := s.mode * s.offset
+
+	for (b-a)+s.Y+offset > s.w {
+		avaliable := a + s.w - s.X - offset
+
+		s.mode = 0
+		offset = 0
+
+		n, _ := fmt.Fprintf(s.screen, NEWLINE_START_CONCAT, str[a:min(avaliable, b)])
+		fmt.Fprintf(s.buffer, "n:%d\n", n)
+		s.buffer.Flush()
+
+		a += n
+
+		s.Y = 0
+		s.X++
+
+		s.lines++
+	}
+
+	n, _ := fmt.Fprintf(s.screen, "%s", str[a:])
+	fmt.Fprintf(s.buffer, "n:%d\n", n)
+	s.buffer.Flush()
+	s.Y += n
 }
 
-func (s *Cursor) Insert(str string) {
-	fmt.Fprint(s.screen, str)
+func (s *Cursor) Insertf(format string, args ...any) {
+	s.Insert(fmt.Sprintf(format, args...))
 }
 
 func (s *Cursor) InsertBytes(str []byte) {
-	fmt.Fprintf(s.screen, "%s", str)
-}
-
-func (s *Cursor) Insertln(str string) {
-	fmt.Fprintln(s.screen, str)
+	s.Insert(fmt.Sprintf("%s", str))
 }
 
 func (s *Cursor) InsertAtNewline(str string) {
-	fmt.Fprintf(s.screen, NEWLINE_START_CONCAT, str)
-	s.X++
+	s.Insert(str)
+	s.Newline()
 }
 
-func (s *Cursor) InsertAtNewline2(format string, args ...any) {
-	fmt.Fprintf(s.screen, NEWLINE_START_CONCAT, fmt.Sprintf(format, args...))
-	s.X++
+func (s *Cursor) InsertAtNewlinef(format string, args ...any) {
+	s.InsertAtNewline(fmt.Sprintf(format, args...))
 }
 
 func (s *Cursor) InsertAnyAtNewline(v any) {
-	fmt.Fprintf(s.screen, NEWLINE_START_CONCAT_V, v)
-	s.X++
+	s.InsertAtNewline(fmt.Sprintf(NEWLINE_START_CONCAT_V, v))
 }
 
 func (s *Cursor) Newline() {
 	fmt.Fprintf(s.screen, NEWLINE_START)
 	s.X++
+	s.Y = 0
 }
 
 func (s *Cursor) Render() {
@@ -110,4 +156,8 @@ func (s *Cursor) Restore() {
 
 func (s *Cursor) Space() {
 	fmt.Fprintf(s.screen, STR_SPACE)
+}
+
+func (s *Cursor) Spaces(n int) {
+	fmt.Fprint(s.screen, strings.Repeat(STR_SPACE, n))
 }

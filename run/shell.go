@@ -3,38 +3,29 @@ package run
 import (
 	"arit/run/cursor"
 	"bufio"
-	"bytes"
 	"fmt"
 	"os"
 
 	"golang.org/x/term"
 )
 
-const (
-	SHELL_PREFIX = "\033[1G\033[38;2;120;166;248m>>> \033[0m"
-)
-
-var SPACES = bytes.Repeat([]byte("        "), 16)
-
-func shell(ste *State, dimx, dimy int) error {
-	//logger := NewLogger()
-	//defer logger.Close()
+func shell(ste *State) error {
 
 	f := os.Stdin.Fd()
 	t_state, _ := term.MakeRaw(int(f))
 	defer term.Restore(int(f), t_state)
 
-	w, h, err := term.GetSize(int(f))
-	if err != nil {
-		panic(err)
-	}
-
-	log_y := 1
+	/*
+		w, _, err := term.GetSize(int(f))
+		if err != nil {
+			panic(err)
+		}
+	*/
 
 	scanner := bufio.NewReader(os.Stdin)
 
-	fmt.Print("\033[?2004h")
-	defer fmt.Print("\033[?2004l")
+	ste.Insert("\033[?2004h")
+	defer ste.Insert("\033[?2004l")
 
 	y := len(ste.History)
 
@@ -43,62 +34,49 @@ func shell(ste *State, dimx, dimy int) error {
 
 	insert := func(xs ...byte) {
 		n := ste.insert(x, ln, xs...)
-		fmt.Printf("\033[s%s\033[u\033[%dC", ste.current[x:], n)
+		ln += n
+
+		ste.Save()
+		ste.InsertBytes(ste.current[x:ln])
+		ste.Restore()
+		ste.Insertf(cursor.F_MOVE_RIGHT, n)
+		ste.Render()
 
 		x += n
-		ln += n
+
 	}
 
-	log := func(x string) {
-		fmt.Print("\033[s") // save pos, new line, move left
-		fmt.Printf("\033[%d;%dH%-60s\n\033[60D%s", log_y, w-62, x, SPACES[:62])
+	set_current_to_history := func(clear bool) {
+		ste.RelativeColumn(ln)
+		ste.ResetLine()
+		ste.current = make([]byte, 128)
+		ln = 0
+		x = 0
 
-		fmt.Print("\033[u") // restore pos
-		log_y = max((log_y+1)%h, 1)
-	}
-
-	log_input := func(n int) {
-		str := fmt.Sprintf("%q", b[:n])
-
-		if n == 6 {
-			str = "PASTE"
+		if clear {
+			return
 		}
 
-		if n == 1 {
-			switch b[0] {
-			case cursor.CtrlL:
-				str = "FORM FEED"
-			case cursor.CtrlC:
-				str = "INTERRUPT"
-			case cursor.CR:
-				str = "NEWLINE"
-			case cursor.ESC:
-				str = "ESCAPE"
-			case cursor.BACKSPACE:
-				str = "BACKSPACE"
-			case cursor.SPACE:
-				str = "SPACE"
-			}
-		}
+		ln = copy(ste.current, ste.History[y])
+		x = ln
 
-		log(fmt.Sprintf("%3v= %-10s - read: %d, rem:%d", b, str, n, scanner.Buffered()))
-	}
-	newline := func() {
-		fmt.Printf("\n\033[%dG", dimx)
+		ste.InsertBytes(ste.current)
+		ste.Render()
 	}
 
 	test_input := func(input string) {
 		ste.current = []byte(input)
 		ln = len(ste.current)
-		fmt.Print("\033[1G")
-		fmt.Print(SHELL_PREFIX)
-		fmt.Printf("[RUNNING_TEST_INPUT] %s", ste.current)
-		newline()
+		ste.ResetLine()
+		ste.Insertf("[RUNNING_TEST_INPUT] %s", ste.current)
+		ste.Newline()
+		ste.Render()
 	}
 
 cooking:
 	for {
-		fmt.Print(SHELL_PREFIX)
+		ste.Pprefix()
+		ste.Render()
 
 		ste.current = make([]byte, 128)
 		b = make([]byte, 6)
@@ -113,13 +91,14 @@ cooking:
 				return err
 			}
 
-			log_input(n)
+			ste.log.LogInput(n, b, scanner.Buffered())
 
 			switch n {
 			case 1: // ascii
 				switch b[0] {
 				case cursor.CtrlC: // <C-c>
-					newline()
+					ste.Newline()
+					ste.Render()
 					continue cooking
 				case cursor.CtrlD: // <C-d>, kill process
 					return nil
@@ -141,7 +120,8 @@ cooking:
 					continue
 
 				case cursor.CR: // cook on enter
-					newline()
+					ste.Newline()
+					ste.Render()
 					break read
 
 				case cursor.BACKSPACE: // delete on backspace
@@ -166,7 +146,7 @@ cooking:
 				}
 
 			case 2: // weird symbols
-				fmt.Printf("the fuck is '%s' (%d, %d)\n", b[0:1], b[0], b[1])
+				fmt.Printf("the fuck is '%s' (%d, %d)\n", b[0:2], b[0], b[1])
 				break read
 
 			case 3: // arrow keys
@@ -180,60 +160,32 @@ cooking:
 						continue
 					}
 
-					fmt.Printf("%s\033[s%s\033[u", SHELL_PREFIX, SPACES[:ln])
-
 					y--
-
-					ln = len(ste.History[y])
-					ste.current = make([]byte, 128)
-					copy(ste.current[:ln], ste.History[y])
-					x = max(x, ln)
-
-					fmt.Print(SHELL_PREFIX)
-					fmt.Printf("%s", ste.current[:ln])
-
-					if x != ln {
-						fmt.Print("\033u")
-					}
+					set_current_to_history(false)
 
 				case 'B': // down
 					if y >= len(ste.History) {
 						continue
 					}
 
+					ste.Insert(cursor.CLEAR_LEFT)
+
 					y++
 
-					ste.current = make([]byte, 128)
-					fmt.Printf("%s\033[s%s\033[u", SHELL_PREFIX, SPACES[:ln])
-
-					if y == len(ste.History) {
-						ln = 0
-						x = 0
-						continue
-					}
-
-					fmt.Print("\033[s")
-
-					ln = len(ste.History[y])
-					copy(ste.current[:ln], ste.History[y])
-					x = max(x, ln)
-					fmt.Print(SHELL_PREFIX)
-					fmt.Printf("%s", ste.current[:ln])
-					if x != ln {
-						fmt.Print("\033u")
-					}
+					set_current_to_history(y == len(ste.History))
 
 				case 'C': // right
 					if x < ln {
 						x++
-						fmt.Print("\033[1C")
 						ste.Cursor.Moveright()
+						ste.Render()
 					}
 
 				case 'D': //left
 					if x > 0 {
 						x--
 						ste.Cursor.Moveleft()
+						ste.Render()
 					}
 					continue
 
@@ -244,7 +196,8 @@ cooking:
 
 			case 6: // paste brackets
 				if string(b) != cursor.PASTE_WRAPPER_HEAD {
-					fmt.Printf("expected %v\n", []byte(cursor.PASTE_WRAPPER_HEAD))
+
+					ste.Insertf("expected %v\n", []byte(cursor.PASTE_WRAPPER_HEAD))
 					return fmt.Errorf("unknown head at read: %v", b)
 				}
 
